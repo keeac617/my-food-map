@@ -246,8 +246,9 @@
 
     <!-- 將模組化邏輯綁定至 Window 物件供前端呼叫 -->
     <script type="module">
+        // 補上遺漏的 getDoc 模組，這樣才能做雙向智慧讀取
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // === Firebase 雲端資料庫設定區 ===
@@ -351,6 +352,7 @@
                 }
             }, (error) => {
                 console.error("雲端讀取錯誤:", error);
+                window.showToast("❌ 雲端資料庫連線失敗，請檢查 Firebase 權限設定！", "error");
             });
         }
 
@@ -372,7 +374,10 @@
                 favorites: window.favorites,
                 searchHistory: window.searchHistory,
                 favLocations: window.favLocations
-            }, { merge: true }).catch(err => console.error("雲端存檔錯誤", err));
+            }, { merge: true }).catch(err => {
+                console.error("雲端存檔錯誤", err);
+                window.showToast("❌ 雲端存檔失敗，請確認 Firebase 設定喔！", "error");
+            });
         }
 
         function updateUIForSync() {
@@ -399,6 +404,7 @@
             }
         }
 
+        // 升級版：支援強制等待 Firebase 拿號碼牌的智慧合併同步功能
         window.confirmSync = async function() {
             const val = document.getElementById('sync-key-input').value.trim();
             if(!val) return window.showToast('請輸入專屬帳號喔！', 'error');
@@ -406,6 +412,16 @@
             localStorage.setItem('foodSyncKey', val);
             window.showToast('🔄 雲端同步中，正在智慧合併雙邊資料...');
             
+            // 強制檢查：如果按太快 Firebase 還沒給號碼牌，就叫它現場發一張！
+            if (!currentUser && auth) {
+                try {
+                    const cred = await signInAnonymously(auth);
+                    currentUser = cred.user;
+                } catch(e) {
+                    console.error("強制驗證失敗:", e);
+                }
+            }
+
             if(currentUser && db) {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey);
                 try {
@@ -426,8 +442,11 @@
                     await window.saveToCloud(); // 把合併結果推上雲端
                 } catch(e) {
                     console.error("合併錯誤:", e);
+                    window.showToast('❌ 同步失敗，這可能是你的 Firebase 還沒開通測試模式喔！', 'error');
                 }
                 setupFirestoreListener();
+            } else {
+                window.showToast('❌ 驗證系統未準備好，請重新整理後再試一次！', 'error');
             }
             window.toggleSyncModal();
         }
