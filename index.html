@@ -16,7 +16,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         /* 踩雷店家的列表卡片樣式 */
         .bad-store-card { background-color: #f1f5f9; opacity: 0.6; filter: grayscale(50%); border-color: #cbd5e1; }
-        /* 自訂地圖標籤樣式：讓文字有白色描邊且不被遮擋 */
         .custom-map-label {
             text-shadow: 2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0 1px 0 #fff, 0 -1px 0 #fff;
             white-space: nowrap;
@@ -26,16 +25,14 @@
 </head>
 <body class="text-slate-800 p-4 md:p-8 flex justify-center">
 
-    <!-- 浮動提示訊息 -->
     <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white shadow-xl transition-opacity duration-300 z-[100] hidden font-bold"></div>
 
     <div class="max-w-4xl w-full">
-        <!-- 頭部區塊、同步與最愛按鈕 -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight"><i class="fa-solid fa-utensils text-orange-500 mr-2"></i>美食探測儀</h1>
             <div class="flex gap-2 w-full md:w-auto">
-                <button onclick="toggleSyncModal()" class="flex-1 md:flex-none bg-blue-100 text-blue-600 hover:bg-blue-200 px-5 py-2.5 rounded-full font-bold transition shadow-sm flex items-center justify-center">
-                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> 雲端同步
+                <button onclick="toggleShareModal()" class="flex-1 md:flex-none bg-indigo-100 text-indigo-600 hover:bg-indigo-200 px-5 py-2.5 rounded-full font-bold transition shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-share-nodes mr-2"></i> 分享清單 / 跨裝置
                 </button>
                 <button onclick="toggleFavModal()" class="flex-1 md:flex-none bg-rose-100 text-rose-600 hover:bg-rose-200 px-5 py-2.5 rounded-full font-bold transition shadow-sm flex items-center justify-center">
                     <i class="fa-solid fa-star mr-2"></i> 我的最愛
@@ -43,7 +40,6 @@
             </div>
         </div>
 
-        <!-- 歷史紀錄、收藏地點與地址搜尋區 -->
         <div class="glass-panel p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 relative z-20">
             <h3 class="text-sm font-bold text-slate-500 mb-2"><i class="fa-solid fa-location-crosshairs mr-1"></i> 1. 定位你的探索中心</h3>
             <div class="flex flex-col sm:flex-row gap-2">
@@ -55,8 +51,7 @@
                            class="w-full pl-10 bg-slate-50 border border-slate-300 text-slate-900 rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none transition shadow-inner"
                            onkeypress="if(event.key === 'Enter') { geocodeAddress(); this.blur(); }">
                     <div id="history-dropdown" class="absolute z-50 w-full bg-white border border-slate-200 shadow-xl rounded-xl mt-12 hidden max-h-56 overflow-y-auto custom-scrollbar">
-                        <!-- 歷史紀錄與收藏地點動態產生區 -->
-                    </div>
+                        </div>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="getCurrentLocation()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl px-4 py-3 transition shadow-sm" title="使用目前位置"><i class="fa-solid fa-location-arrow"></i></button>
@@ -65,7 +60,6 @@
             </div>
         </div>
 
-        <!-- 手動標籤與精準搜尋區 -->
         <div class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
             <h3 class="text-sm font-bold text-slate-500 mb-3"><i class="fa-solid fa-magnifying-glass text-indigo-500 mr-1"></i> 2. 搜尋特定店家或選擇類別</h3>
             
@@ -77,7 +71,6 @@
             <hr class="border-slate-100 my-4">
             
             <div class="flex flex-wrap gap-2 mb-4 max-h-48 overflow-y-auto custom-scrollbar p-1">
-                <!-- 麵/飯/正餐類 -->
                 <button onclick="manualSearch('拉麵')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍜 拉麵</button>
                 <button onclick="manualSearch('義大利麵')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍝 義大利麵</button>
                 <button onclick="manualSearch('滷肉飯')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍚 滷肉飯</button>
@@ -91,7 +84,6 @@
                 <button onclick="manualSearch('健康餐')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🥗 健康餐</button>
                 <button onclick="manualSearch('素食')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🥬 素食</button>
                 
-                <!-- 異國料理 -->
                 <button onclick="manualSearch('日式')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍱 日式</button>
                 <button onclick="manualSearch('韓式')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍲 韓式</button>
                 <button onclick="manualSearch('港式')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🥟 港式</button>
@@ -100,7 +92,6 @@
                 <button onclick="manualSearch('中式')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🥡 中式</button>
                 <button onclick="manualSearch('西式')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍴 西式</button>
                 
-                <!-- 小吃/速食類 -->
                 <button onclick="manualSearch('早午餐')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍳 早午餐</button>
                 <button onclick="manualSearch('速食')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍔 速食</button>
                 <button onclick="manualSearch('鹽酥雞')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍗 鹽酥雞</button>
@@ -109,7 +100,6 @@
                 <button onclick="manualSearch('章魚燒')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🐙 章魚燒</button>
                 <button onclick="manualSearch('虱目魚')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🐟 虱目魚</button>
                 
-                <!-- 甜點/飲料/宵夜類 -->
                 <button onclick="manualSearch('咖啡廳')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">☕ 咖啡廳</button>
                 <button onclick="manualSearch('甜點')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍰 甜點</button>
                 <button onclick="manualSearch('冰')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍨 冰</button>
@@ -120,7 +110,6 @@
                 <button onclick="manualSearch('酒吧')" class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition">🍺 酒吧</button>
             </div>
 
-            <!-- 隨機推薦與抽籤區塊 -->
             <div class="flex flex-col md:flex-row gap-3 pt-3 border-t border-slate-100">
                 <button onclick="spinRoulette('food')" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl transition shadow-sm"><i class="fa-solid fa-dice mr-1"></i> 隨機吃什麼</button>
                 <button onclick="spinRoulette('drink')" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 rounded-xl transition shadow-sm"><i class="fa-solid fa-dice mr-1"></i> 隨機喝什麼</button>
@@ -138,7 +127,6 @@
             <p id="roulette-result" class="text-center font-bold text-lg text-slate-700 mt-4 h-6">❓ 先定位，再搜尋或選擇類別！</p>
         </div>
 
-        <!-- 地圖與 8 公里擴大搜尋按鈕 -->
         <div class="relative mb-6 z-10">
             <div id="map" class="w-full rounded-2xl shadow-inner border border-slate-300 bg-slate-200 flex items-center justify-center overflow-hidden">
                 <p class="text-slate-500 font-bold"><i class="fa-solid fa-map-location-dot text-2xl mb-2 block text-center"></i>地圖準備中...</p>
@@ -148,17 +136,13 @@
             </button>
         </div>
 
-        <!-- 附近店家列表區塊 -->
         <div id="results-list-section" class="hidden mb-6">
             <div class="flex justify-between items-end mb-3">
                 <h3 class="text-lg font-bold text-slate-700"><i class="fa-solid fa-list-ul text-blue-500 mr-2"></i>搜尋結果列表</h3>
                 <span id="results-count" class="text-sm font-bold text-slate-400">共 0 家</span>
             </div>
-            <!-- 卡片網格 -->
             <div id="results-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar p-1 mb-4">
-                <!-- 列表卡片會透過 JS 產生在這裡 -->
-            </div>
-            <!-- 載入更多結果按鈕 -->
+                </div>
             <div class="text-center">
                 <button id="load-more-btn" onclick="loadMoreResults()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-8 rounded-full transition shadow-sm border border-slate-300">
                     ➕ 載入更多結果
@@ -166,7 +150,6 @@
             </div>
         </div>
 
-        <!-- 餐廳詳細資訊與評論區塊 (預設隱藏) -->
         <div id="review-section" class="hidden mb-10 bg-white p-6 rounded-2xl shadow-xl border border-slate-200 fade-in relative overflow-hidden">
             <button onclick="closeReview()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
             
@@ -175,13 +158,11 @@
                     <h2 id="review-target" class="text-2xl font-extrabold text-slate-800 mb-1 line-clamp-2">店名</h2>
                     <p id="detail-rating" class="text-sm text-slate-500 font-medium"></p>
                 </div>
-                <!-- 獨立的加入最愛按鈕 -->
                 <button id="fav-btn-detail" onclick="toggleFavoriteFromDetail()" class="text-2xl text-slate-300 hover:text-rose-500 transition focus:outline-none flex-shrink-0 ml-2" title="加入/移除最愛">
                     <i class="fa-solid fa-heart"></i>
                 </button>
             </div>
 
-            <!-- 詳細資訊面板 -->
             <div id="detail-info" class="bg-slate-50 p-4 rounded-xl mb-5 text-sm text-slate-600 space-y-3 border border-slate-100">
                 <p class="flex items-start"><i class="fa-solid fa-clock w-5 text-slate-400 mt-0.5"></i> <span id="detail-hours">載入中...</span></p>
                 <p class="flex items-center"><i class="fa-solid fa-phone w-5 text-slate-400"></i> <span id="detail-phone">載入中...</span></p>
@@ -191,7 +172,6 @@
 
             <hr class="border-slate-100 my-5">
 
-            <!-- 專屬評論與避雷針設定區 -->
             <h3 class="font-bold text-slate-700 mb-3"><i class="fa-solid fa-book text-blue-500 mr-1"></i> 我的專屬評論筆記</h3>
             <div class="flex gap-3 mb-3">
                 <button id="btn-good" onclick="rate('good')" class="flex-1 bg-white hover:bg-green-50 text-slate-600 border border-slate-200 font-bold py-2.5 rounded-xl transition shadow-sm"><i class="fa-solid fa-thumbs-up mr-1"></i> 超讚</button>
@@ -203,13 +183,11 @@
             </button>
         </div>
         
-        <!-- 底部版號資訊 -->
         <div class="text-center text-slate-400 text-xs mt-8 mb-4 font-mono">
-            2.0 | 2026/05/27 09:02
+            3.0 Serverless | 2026/05/27 19:47
         </div>
     </div>
 
-    <!-- 我的最愛清單彈窗 (Modal) -->
     <div id="fav-modal" class="fixed inset-0 bg-slate-900 bg-opacity-60 z-50 hidden flex justify-center items-center backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-11/12 max-w-lg max-h-[80vh] flex flex-col shadow-2xl fade-in relative">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
@@ -222,246 +200,139 @@
         </div>
     </div>
 
-    <!-- 雲端同步設定彈窗 (Modal) -->
-    <div id="sync-modal" class="fixed inset-0 bg-slate-900 bg-opacity-60 z-50 hidden flex justify-center items-center backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-11/12 max-w-sm flex flex-col shadow-2xl p-6 relative fade-in">
-            <button onclick="toggleSyncModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-            <h2 class="text-xl font-extrabold text-slate-800 mb-2"><i class="fa-solid fa-cloud-arrow-up text-blue-500 mr-2"></i>跨裝置同步</h2>
-            <p class="text-xs text-slate-500 mb-4 leading-relaxed">設定一組專屬帳號名稱（例如手機號碼）。在不同的電腦或手機上開啟網頁時，只要輸入相同名稱，你的「最愛、歷史紀錄與評論」就會瞬間同步喔！</p>
-            <input type="text" id="sync-key-input" placeholder="請設定或輸入專屬帳號..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 mb-4 focus:ring-blue-500 focus:border-blue-500 outline-none font-bold text-slate-700 shadow-inner transition">
-            <button onclick="confirmSync()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 rounded-xl transition shadow-md">🔗 綁定並開始同步</button>
+    <div id="share-modal" class="fixed inset-0 bg-slate-900 bg-opacity-60 z-50 hidden flex justify-center items-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-11/12 max-w-md flex flex-col shadow-2xl p-6 relative fade-in">
+            <button onclick="toggleShareModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h2 class="text-xl font-extrabold text-slate-800 mb-2"><i class="fa-solid fa-share-nodes text-indigo-500 mr-2"></i>分享 / 跨裝置同步</h2>
+            <p class="text-xs text-slate-500 mb-4 leading-relaxed">點擊下方按鈕，系統會將你目前的「收藏本與筆記」打包成一段專屬網址。你可以傳到自己的手機上直接開啟，或是傳給朋友，讓他們一鍵匯入你的私房名單！</p>
+            <textarea id="share-link-box" readonly class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-400 focus:outline-none mb-3 resize-none h-20" placeholder="點擊按鈕產生專屬連結..."></textarea>
+            <button onclick="generateAndCopyShareLink()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-3 rounded-xl transition shadow-md flex justify-center items-center">
+                <i class="fa-solid fa-copy mr-2"></i> 產生連結並複製
+            </button>
         </div>
     </div>
 
-    <!-- 解決地圖與模組載入順序衝突的等待機制 -->
     <script>
+        // 解決地圖載入順序衝突
         window.gmapsLoaded = false;
         window.initMapAsync = function() {
             window.gmapsLoaded = true;
-            if (typeof window.initMap === 'function') {
-                window.initMap();
-            }
+            if (typeof window.initMap === 'function') window.initMap();
         };
-    </script>
 
-    <!-- 將模組化邏輯綁定至 Window 物件供前端呼叫 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // === Firebase 雲端資料庫設定區 ===
-        const firebaseConfig = {
-            apiKey: "AIzaSyAk-TsFJ9a7bn5jy-DwLIgUEjZWoNlv4q8",
-            authDomain: "myfoodmap-b7389.firebaseapp.com",
-            projectId: "myfoodmap-b7389",
-            storageBucket: "myfoodmap-b7389.firebasestorage.app",
-            messagingSenderId: "23220454263",
-            appId: "1:23220454263:web:27d1793355d323e2ee5772"
-        };
-        
-        let db = null, auth = null;
-        let currentUser = null;
-        let unsubscribeData = null;
-        const appId = 'my-food-map-pro'; 
-        
-        let customSyncKey = localStorage.getItem('foodSyncKey') || null;
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch(e) { 
-            console.error("Firebase 初始化失敗", e); 
-        }
-
-        let map, service, infowindow, geocoder;
-        let markers = [];
-        let currentPlacesList = []; 
-        let currentPagination = null;
-        let currentCenter = { lat: 25.0339, lng: 121.5644 }; 
-        let currentKeyword = "";
-        let currentRadius = 1000;
-        let currentSelectedPlace = null; 
-        let currentRating = ""; 
-
+        // 讀取 LocalStorage 當作預設基礎
         window.reviews = JSON.parse(localStorage.getItem('foodReviews')) || {};
         window.favorites = JSON.parse(localStorage.getItem('foodFavs')) || [];
         window.searchHistory = JSON.parse(localStorage.getItem('foodHistory')) || [];
         window.favLocations = JSON.parse(localStorage.getItem('foodFavLocs')) || [];
 
-        const initAuth = async () => {
-            if (!auth) return;
-            try {
-                await signInAnonymously(auth);
-            } catch (e) {
-                console.error("驗證失敗", e);
-            }
-        };
-
-        if (auth) {
-            initAuth();
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    setupFirestoreListener();
-                }
-            });
-        }
-
-        // ==========================================
-        // 🔥 核心升級：真正的同步監聽邏輯
-        // ==========================================
-        function setupFirestoreListener() {
-            if (!currentUser || !db) return;
-            const docRef = customSyncKey
-                ? doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey)
-                : doc(db, 'artifacts', appId, 'users', currentUser.uid, 'foodData', 'main');
-
-            if (unsubscribeData) unsubscribeData();
-
-            unsubscribeData = onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // 【邏輯修正】收到雲端更新時，直接以雲端為準（這樣手機刪除某家店，電腦才會跟著刪除！）
-                    window.favorites = data.favorites || [];
-                    window.reviews = data.reviews || {};
-                    window.searchHistory = data.searchHistory || [];
-                    window.favLocations = data.favLocations || [];
-
-                    localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
-                    localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
-                    localStorage.setItem('foodHistory', JSON.stringify(window.searchHistory));
-                    localStorage.setItem('foodFavLocs', JSON.stringify(window.favLocations));
-
-                    updateUIForSync();
-                } else if (customSyncKey) {
-                    // 如果雲端完全沒資料，再把本地的推上去
-                    window.saveToCloud();
-                }
-            }, (error) => {
-                console.error("雲端讀取錯誤:", error);
-            });
-        }
-
-        // ==========================================
-        // 🔥 核心升級：加上 async 與錯誤回傳的儲存機制
-        // ==========================================
-        window.saveToCloud = async function() {
+        // 單機儲存機制 (取代雲端)
+        window.saveToLocal = function() {
             localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
             localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
             localStorage.setItem('foodHistory', JSON.stringify(window.searchHistory));
             localStorage.setItem('foodFavLocs', JSON.stringify(window.favLocations));
-
-            if (!currentUser || !db) return;
-            
-            const docRef = customSyncKey
-                ? doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey)
-                : doc(db, 'artifacts', appId, 'users', currentUser.uid, 'foodData', 'main');
-
-            try {
-                await setDoc(docRef, {
-                    reviews: window.reviews,
-                    favorites: window.favorites,
-                    searchHistory: window.searchHistory,
-                    favLocations: window.favLocations
-                }, { merge: true });
-            } catch(err) {
-                console.error("雲端存檔錯誤", err);
-                throw err; // 把錯誤往上丟，讓 confirmSync 可以抓到
-            }
+            updateUIForData();
         }
 
-        function updateUIForSync() {
-            window.updateLocFavBtn();
-            if(!document.getElementById('fav-modal').classList.contains('hidden')) {
-                window.renderFavList(); // 如果畫面開著，即時重繪選單
-            }
-            if(currentKeyword && currentPlacesList.length > 0) {
-                window.renderResultsList(currentPlacesList);
-            }
-            if(currentSelectedPlace) {
-                window.updateDetailUI();
-            }
-        }
-
-        window.toggleSyncModal = function() {
-            const m = document.getElementById('sync-modal');
+        // ==========================================
+        // ⚡ 核心黑科技：免伺服器「網址分享與匯入」系統
+        // ==========================================
+        window.toggleShareModal = function() {
+            const m = document.getElementById('share-modal');
             if(m.classList.contains('hidden')) {
-                document.getElementById('sync-key-input').value = customSyncKey || '';
+                document.getElementById('share-link-box').value = '';
                 m.classList.remove('hidden');
             } else {
                 m.classList.add('hidden');
             }
         }
 
+        window.generateAndCopyShareLink = function() {
+            // 將重要資料打包
+            const payload = {
+                f: window.favorites,
+                r: window.reviews,
+                h: window.favLocations
+            };
+            // 透過 Base64 壓縮編碼成網址字串
+            const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
+            // 將編碼接在你的 GitHub Pages 網址後面
+            const shareUrl = "https://keeac617.github.io/my-food-map/?data=" + encodedData;
+            
+            const linkBox = document.getElementById('share-link-box');
+            linkBox.value = shareUrl;
+            linkBox.select();
+            document.execCommand('copy');
+            
+            window.showToast("✅ 連結已複製！傳送到手機或分享給朋友吧！");
+        }
+
+        // 當網頁載入時，檢查網址有沒有帶分享代碼
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const dataParam = params.get('data');
+            
+            if (dataParam) {
+                try {
+                    // 解碼拿回資料
+                    const importedData = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(dataParam)))));
+                    
+                    if (confirm("💌 偵測到分享的口袋名單！是否要匯入並與您現有的名單合併？\n\n(放心，不會刪除您原本的紀錄)")) {
+                        // 智慧合併最愛清單
+                        const importedFavs = importedData.f || [];
+                        const mergedFavs = [...window.favorites];
+                        importedFavs.forEach(inf => {
+                            if (!mergedFavs.some(mf => mf.name === inf.name)) mergedFavs.push(inf);
+                        });
+                        window.favorites = mergedFavs;
+                        
+                        // 智慧合併筆記與常用地點
+                        window.reviews = { ...(importedData.r || {}), ...window.reviews };
+                        window.favLocations = [...new Set([...window.favLocations, ...(importedData.h || [])])];
+                        
+                        window.saveToLocal();
+                        window.showToast("🎉 匯入成功！所有的名單都合併好囉！");
+                    }
+                    
+                    // 清除網址列的落落長代碼，保持畫面乾淨
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (e) {
+                    console.error("匯入解析失敗:", e);
+                    window.showToast("❌ 分享連結似乎失效或損毀了", "error");
+                }
+            }
+        });
+
         // ==========================================
-        // 🔥 核心升級：防卡死強效同步按鈕
+        // 介面更新與主要功能區
         // ==========================================
-        window.confirmSync = async function() {
-            const val = document.getElementById('sync-key-input').value.trim();
-            if(!val) return window.showToast('請輸入專屬帳號喔！', 'error');
-            
-            customSyncKey = val;
-            localStorage.setItem('foodSyncKey', val);
-            
-            // 1. 第一步：先關閉視窗，讓使用者覺得很順暢
-            window.toggleSyncModal();
-            window.showToast('🔄 雲端連線中...請稍候');
-            
-            try {
-                // 2. 防卡死機制：設定最高等 5 秒，如果不回傳直接中斷報錯
-                const timeoutLimit = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
-
-                if (!currentUser && auth) {
-                    const cred = await Promise.race([signInAnonymously(auth), timeoutLimit]);
-                    currentUser = cred.user;
-                }
-
-                if(!currentUser || !db) throw new Error("資料庫尚未準備好");
-
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey);
-                
-                // 3. 第一次綁定時，進行「智慧合併」
-                const docSnap = await Promise.race([getDoc(docRef), timeoutLimit]);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const cloudFavs = data.favorites || [];
-                    const mergedFavs = [...window.favorites];
-                    cloudFavs.forEach(cf => {
-                        if (!mergedFavs.some(mf => mf.name === cf.name)) mergedFavs.push(cf);
-                    });
-                    window.favorites = mergedFavs;
-                    window.reviews = { ...(data.reviews || {}), ...window.reviews };
-                    window.searchHistory = [...new Set([...window.searchHistory, ...(data.searchHistory || [])])].slice(0, 10);
-                    window.favLocations = [...new Set([...window.favLocations, ...(data.favLocations || [])])];
-                }
-                
-                // 4. 將合併後的最終結果推上雲端
-                await Promise.race([window.saveToCloud(), timeoutLimit]);
-                
-                // 5. 重新啟動背景監聽
-                setupFirestoreListener();
-                
-                window.showToast('✅ 雙向同步成功！資料已完美合併。');
-                updateUIForSync();
-
-            } catch(e) {
-                console.error("同步錯誤:", e);
-                // 精準抓漏：到底是網路太慢卡死，還是權限被擋？
-                if (e.message === "Timeout") {
-                    window.showToast('❌ 連線逾時！請檢查網路，或確認你的 Firebase 有建立 Firestore 資料庫', 'error');
-                } else {
-                    window.showToast('❌ 同步失敗，這可能是你的 Firebase 還沒開通測試模式權限喔！', 'error');
-                }
+        function updateUIForData() {
+            window.updateLocFavBtn();
+            if(!document.getElementById('fav-modal').classList.contains('hidden')) {
+                window.renderFavList();
+            }
+            if(window.currentSelectedPlace) window.updateDetailUI();
+            if(window.currentKeyword && window.currentPlacesList) {
+                // 更新列表與地圖標籤狀態
+                window.renderResultsList(window.currentPlacesList);
+                clearMarkers();
+                window.currentPlacesList.forEach((place, index) => createMarker(place, index));
             }
         }
 
-
-        // === 主力邏輯區塊 ===
         const foodList = ["拉麵", "火鍋", "水餃", "義大利麵", "牛排", "早午餐", "壽司", "燒肉", "健康餐", "漢堡", "滷肉飯", "蔥油餅"];
         const drinkList = ["珍珠奶茶", "無糖綠茶", "拿鐵咖啡", "水果茶", "手沖單品", "豆花", "冰品", "手搖飲料"];
+
+        let map, service, infowindow, geocoder;
+        let markers = [];
+        window.currentPlacesList = []; 
+        let currentPagination = null;
+        let currentCenter = { lat: 25.0339, lng: 121.5644 }; 
+        window.currentKeyword = "";
+        let currentRadius = 1000;
+        window.currentSelectedPlace = null; 
+        let currentRating = ""; 
 
         window.showToast = function(msg, type = 'success') {
             const toast = document.getElementById('toast');
@@ -506,7 +377,7 @@
             window.searchHistory = window.searchHistory.filter(h => h !== addr);
             window.searchHistory.unshift(addr);
             if (window.searchHistory.length > 10) window.searchHistory.pop(); 
-            window.saveToCloud();
+            window.saveToLocal();
         }
 
         window.toggleFavLocation = function() {
@@ -521,8 +392,7 @@
                 window.searchHistory = window.searchHistory.filter(h => h !== addr);
                 window.showToast('📍 成功收藏地點！');
             }
-            window.saveToCloud();
-            window.updateLocFavBtn();
+            window.saveToLocal();
         }
 
         window.updateLocFavBtn = function() {
@@ -551,9 +421,7 @@
             infowindow = new google.maps.InfoWindow();
         }
 
-        if (window.gmapsLoaded) {
-            window.initMap();
-        }
+        if (window.gmapsLoaded) window.initMap();
 
         window.geocodeAddress = function() {
             const address = document.getElementById("address-input").value.trim();
@@ -609,10 +477,7 @@
             
             new google.maps.Marker({ 
                 map: map, position: currentCenter, 
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 6, fillColor: '#2563eb', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff'
-                }
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#2563eb', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff' }
             });
             window.showToast(`📍 定位成功！現在可以選擇你想吃的類別了`);
         }
@@ -630,16 +495,16 @@
         }
 
         window.expandSearchTo8km = function() {
-            searchNearby(currentKeyword, 8000); 
+            searchNearby(window.currentKeyword, 8000); 
         }
 
         function searchNearby(keyword, radius) {
             if (!map) return;
-            currentKeyword = keyword;
+            window.currentKeyword = keyword;
             currentRadius = radius;
             
             clearMarkers();
-            currentPlacesList = [];
+            window.currentPlacesList = [];
             currentPagination = null;
 
             document.getElementById('expand-btn').classList.add('hidden');
@@ -655,15 +520,15 @@
 
         function handleSearchResults(results, status, pagination, keyword) {
             if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                const startIndex = currentPlacesList.length;
-                currentPlacesList = currentPlacesList.concat(results); 
+                const startIndex = window.currentPlacesList.length;
+                window.currentPlacesList = window.currentPlacesList.concat(results); 
                 
                 results.forEach((place, index) => createMarker(place, startIndex + index));
                 map.setZoom(currentRadius > 3000 ? 12 : (currentRadius > 1000 ? 13 : 15));
                 if (currentRadius < 8000) document.getElementById('expand-btn').classList.remove('hidden');
                 
-                window.renderResultsList(currentPlacesList);
-                window.showToast(`已找到 ${currentPlacesList.length} 家「${keyword}」！`);
+                window.renderResultsList(window.currentPlacesList);
+                window.showToast(`已找到 ${window.currentPlacesList.length} 家「${keyword}」！`);
 
                 const loadBtn = document.getElementById('load-more-btn');
                 if (pagination && pagination.hasNextPage) {
@@ -682,7 +547,7 @@
                     loadBtn.classList.add('hidden');
                 }
             } else {
-                if(currentPlacesList.length === 0) {
+                if(window.currentPlacesList.length === 0) {
                     window.showToast(`附近找不到「${keyword}」，試試擴大範圍或換個關鍵字？`, "error");
                     if (currentRadius < 8000) document.getElementById('expand-btn').classList.remove('hidden');
                 }
@@ -781,39 +646,39 @@
 
         function loadPlaceDetails(placeId, basicPlace) {
             service.getDetails({ placeId: placeId, fields: ['name', 'rating', 'user_ratings_total', 'formatted_phone_number', 'opening_hours', 'photos', 'url', 'types'] }, (data, status) => {
-                currentSelectedPlace = status === google.maps.places.PlacesServiceStatus.OK ? data : basicPlace;
+                window.currentSelectedPlace = status === google.maps.places.PlacesServiceStatus.OK ? data : basicPlace;
                 
-                document.getElementById('review-target').innerText = currentSelectedPlace.name;
-                document.getElementById('detail-rating').innerText = currentSelectedPlace.rating ? `Google 星級: ${currentSelectedPlace.rating} ⭐ (${currentSelectedPlace.user_ratings_total || 0} 則)` : "無評價";
+                document.getElementById('review-target').innerText = window.currentSelectedPlace.name;
+                document.getElementById('detail-rating').innerText = window.currentSelectedPlace.rating ? `Google 星級: ${window.currentSelectedPlace.rating} ⭐ (${window.currentSelectedPlace.user_ratings_total || 0} 則)` : "無評價";
                 
                 let hoursHTML = "營業時間未提供";
-                if (currentSelectedPlace.opening_hours && currentSelectedPlace.opening_hours.weekday_text) {
-                    hoursHTML = `<div class="text-xs space-y-1 mt-1 leading-relaxed">${currentSelectedPlace.opening_hours.weekday_text.join('<br>')}</div>`;
-                } else if (currentSelectedPlace.opening_hours) {
+                if (window.currentSelectedPlace.opening_hours && window.currentSelectedPlace.opening_hours.weekday_text) {
+                    hoursHTML = `<div class="text-xs space-y-1 mt-1 leading-relaxed">${window.currentSelectedPlace.opening_hours.weekday_text.join('<br>')}</div>`;
+                } else if (window.currentSelectedPlace.opening_hours) {
                     let isOpenNow = null;
-                    if (typeof currentSelectedPlace.opening_hours.isOpen === 'function') isOpenNow = currentSelectedPlace.opening_hours.isOpen();
-                    else if (currentSelectedPlace.opening_hours.hasOwnProperty('open_now')) isOpenNow = currentSelectedPlace.opening_hours.open_now;
+                    if (typeof window.currentSelectedPlace.opening_hours.isOpen === 'function') isOpenNow = window.currentSelectedPlace.opening_hours.isOpen();
+                    else if (window.currentSelectedPlace.opening_hours.hasOwnProperty('open_now')) isOpenNow = window.currentSelectedPlace.opening_hours.open_now;
                     
                     if(isOpenNow === true) hoursHTML = '<span class="text-green-600 font-bold">目前營業中 🟢</span>';
                     else if(isOpenNow === false) hoursHTML = '<span class="text-red-500 font-bold">目前休息中 🔴</span>';
                 }
                 document.getElementById('detail-hours').innerHTML = hoursHTML;
-                document.getElementById('detail-phone').innerText = currentSelectedPlace.formatted_phone_number || "無提供電話";
-                document.getElementById('detail-url').href = currentSelectedPlace.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentSelectedPlace.name)}`;
+                document.getElementById('detail-phone').innerText = window.currentSelectedPlace.formatted_phone_number || "無提供電話";
+                document.getElementById('detail-url').href = window.currentSelectedPlace.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(window.currentSelectedPlace.name)}`;
                 
                 const photoDiv = document.getElementById('detail-photos');
                 photoDiv.innerHTML = "";
-                if (currentSelectedPlace.photos) {
-                    for(let i=0; i<Math.min(4, currentSelectedPlace.photos.length); i++){
-                        photoDiv.innerHTML += `<img src="${currentSelectedPlace.photos[i].getUrl({maxWidth: 200, maxHeight: 150})}" class="rounded-lg h-24 object-cover shadow-sm border border-slate-200">`;
+                if (window.currentSelectedPlace.photos) {
+                    for(let i=0; i<Math.min(4, window.currentSelectedPlace.photos.length); i++){
+                        photoDiv.innerHTML += `<img src="${window.currentSelectedPlace.photos[i].getUrl({maxWidth: 200, maxHeight: 150})}" class="rounded-lg h-24 object-cover shadow-sm border border-slate-200">`;
                     }
                 }
 
                 currentRating = "";
                 document.getElementById('review-note').value = "";
-                if (window.reviews[currentSelectedPlace.name]) {
-                    currentRating = window.reviews[currentSelectedPlace.name].rating;
-                    document.getElementById('review-note').value = window.reviews[currentSelectedPlace.name].note || "";
+                if (window.reviews[window.currentSelectedPlace.name]) {
+                    currentRating = window.reviews[window.currentSelectedPlace.name].rating;
+                    document.getElementById('review-note').value = window.reviews[window.currentSelectedPlace.name].note || "";
                 }
                 window.updateDetailUI();
                 
@@ -838,27 +703,21 @@
             if (currentRating === 'good') btnGood.className = "flex-1 bg-green-500 text-white border-green-600 font-bold py-2.5 rounded-xl transition shadow-md";
             if (currentRating === 'bad') btnBad.className = "flex-1 bg-red-500 text-white border-red-600 font-bold py-2.5 rounded-xl transition shadow-md";
 
-            if (currentSelectedPlace) {
-                const isFav = window.favorites.some(f => f.name === currentSelectedPlace.name);
+            if (window.currentSelectedPlace) {
+                const isFav = window.favorites.some(f => f.name === window.currentSelectedPlace.name);
                 document.getElementById('fav-btn-detail').innerHTML = isFav ? `<i class="fa-solid fa-star text-rose-500"></i>` : `<i class="fa-regular fa-star"></i>`;
             }
         }
 
         window.saveReview = function() {
-            if (!currentSelectedPlace || !currentRating) return window.showToast("請先選擇超讚或踩雷！", "error");
+            if (!window.currentSelectedPlace || !currentRating) return window.showToast("請先選擇超讚或踩雷！", "error");
             
             let cat = '美食';
-            if(currentSelectedPlace.types) cat = autoCategorize(currentSelectedPlace.types.join(','), currentSelectedPlace.name);
+            if(window.currentSelectedPlace.types) cat = autoCategorize(window.currentSelectedPlace.types.join(','), window.currentSelectedPlace.name);
 
-            window.reviews[currentSelectedPlace.name] = { rating: currentRating, note: document.getElementById('review-note').value, category: cat };
-            window.saveToCloud(); 
-            window.showToast("💾 筆記儲存成功！(踩雷店家在地圖與列表中將會變灰)");
-            
-            if (currentKeyword) {
-                window.renderResultsList(currentPlacesList);
-                clearMarkers();
-                currentPlacesList.forEach((place, index) => createMarker(place, index));
-            }
+            window.reviews[window.currentSelectedPlace.name] = { rating: currentRating, note: document.getElementById('review-note').value, category: cat };
+            window.saveToLocal(); 
+            window.showToast("💾 筆記儲存成功！");
         }
 
         function autoCategorize(typesStr, name) {
@@ -876,16 +735,14 @@
             } else {
                 const cat = autoCategorize(typesStr, placeName);
                 window.favorites.push({ name: placeName, category: cat });
-                window.showToast(`❤️ 加入最愛！自動分類為：${cat}`);
+                window.showToast(`❤️ 加入最愛！`);
             }
-            window.saveToCloud();
-            if (currentKeyword) window.renderResultsList(currentPlacesList); 
-            if (currentSelectedPlace && currentSelectedPlace.name === placeName) window.updateDetailUI();
+            window.saveToLocal();
         }
 
         window.toggleFavoriteFromDetail = function() {
-            if (!currentSelectedPlace) return;
-            window.toggleFavFromList(currentSelectedPlace.name, currentSelectedPlace.types ? currentSelectedPlace.types.join(',') : '');
+            if (!window.currentSelectedPlace) return;
+            window.toggleFavFromList(window.currentSelectedPlace.name, window.currentSelectedPlace.types ? window.currentSelectedPlace.types.join(',') : '');
         }
 
         window.toggleFavModal = function() {
@@ -931,16 +788,12 @@
 
         window.removeFavModal = function(name) {
             window.favorites = window.favorites.filter(f => f.name !== name);
-            window.saveToCloud();
-            window.renderFavList();
-            if (currentKeyword) window.renderResultsList(currentPlacesList);
+            window.saveToLocal();
         }
         
         window.removeFavLocModal = function(addr) {
             window.favLocations = window.favLocations.filter(l => l !== addr);
-            window.saveToCloud();
-            window.updateLocFavBtn();
-            window.renderFavList();
+            window.saveToLocal();
         }
 
         window.spinRoulette = function(type) {
