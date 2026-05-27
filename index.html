@@ -246,7 +246,6 @@
 
     <!-- 將模組化邏輯綁定至 Window 物件供前端呼叫 -->
     <script type="module">
-        // 補上遺漏的 getDoc 模組，這樣才能做雙向智慧讀取
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -266,7 +265,6 @@
         let unsubscribeData = null;
         const appId = 'my-food-map-pro'; 
         
-        // 使用者輸入的自訂雲端帳號
         let customSyncKey = localStorage.getItem('foodSyncKey') || null;
 
         try {
@@ -277,7 +275,6 @@
             console.error("Firebase 初始化失敗", e); 
         }
 
-        // 資料變數宣告
         let map, service, infowindow, geocoder;
         let markers = [];
         let currentPlacesList = []; 
@@ -288,13 +285,11 @@
         let currentSelectedPlace = null; 
         let currentRating = ""; 
 
-        // 讀取 LocalStorage 當作預設基礎
         window.reviews = JSON.parse(localStorage.getItem('foodReviews')) || {};
         window.favorites = JSON.parse(localStorage.getItem('foodFavs')) || [];
         window.searchHistory = JSON.parse(localStorage.getItem('foodHistory')) || [];
         window.favLocations = JSON.parse(localStorage.getItem('foodFavLocs')) || [];
 
-        // 初始化驗證 (因為換成了自己的資料庫，直接使用匿名驗證)
         const initAuth = async () => {
             if (!auth) return;
             try {
@@ -309,14 +304,16 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
-                    setupFirestoreListener(); // 驗證後啟動監聽器
+                    setupFirestoreListener();
                 }
             });
         }
 
+        // ==========================================
+        // 🔥 核心升級：真正的同步監聽邏輯
+        // ==========================================
         function setupFirestoreListener() {
             if (!currentUser || !db) return;
-            // 根據是否有自訂帳號，決定要存放在雲端的路徑
             const docRef = customSyncKey
                 ? doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey)
                 : doc(db, 'artifacts', appId, 'users', currentUser.uid, 'foodData', 'main');
@@ -327,19 +324,12 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     
-                    // 智慧合併邏輯：保留兩邊的手機與電腦新增紀錄
-                    const cloudFavs = data.favorites || [];
-                    const mergedFavs = [...window.favorites];
-                    cloudFavs.forEach(cf => {
-                        if (!mergedFavs.some(mf => mf.name === cf.name)) mergedFavs.push(cf);
-                    });
-                    window.favorites = mergedFavs;
-                    
-                    window.reviews = { ...(data.reviews || {}), ...window.reviews };
-                    window.searchHistory = [...new Set([...(data.searchHistory || []), ...window.searchHistory])].slice(0, 10);
-                    window.favLocations = [...new Set([...(data.favLocations || []), ...window.favLocations])];
+                    // 【邏輯修正】收到雲端更新時，直接以雲端為準（這樣手機刪除某家店，電腦才會跟著刪除！）
+                    window.favorites = data.favorites || [];
+                    window.reviews = data.reviews || {};
+                    window.searchHistory = data.searchHistory || [];
+                    window.favLocations = data.favLocations || [];
 
-                    // 更新 LocalStorage
                     localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
                     localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
                     localStorage.setItem('foodHistory', JSON.stringify(window.searchHistory));
@@ -347,17 +337,18 @@
 
                     updateUIForSync();
                 } else if (customSyncKey) {
-                    // 如果綁定了新帳號但雲端沒資料，就把目前的本地端推上去
+                    // 如果雲端完全沒資料，再把本地的推上去
                     window.saveToCloud();
                 }
             }, (error) => {
                 console.error("雲端讀取錯誤:", error);
-                window.showToast("❌ 雲端資料庫連線失敗，請檢查 Firebase 權限設定！", "error");
             });
         }
 
-        window.saveToCloud = function() {
-            // 同時備份在 LocalStorage 以防斷線
+        // ==========================================
+        // 🔥 核心升級：加上 async 與錯誤回傳的儲存機制
+        // ==========================================
+        window.saveToCloud = async function() {
             localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
             localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
             localStorage.setItem('foodHistory', JSON.stringify(window.searchHistory));
@@ -369,21 +360,23 @@
                 ? doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey)
                 : doc(db, 'artifacts', appId, 'users', currentUser.uid, 'foodData', 'main');
 
-            setDoc(docRef, {
-                reviews: window.reviews,
-                favorites: window.favorites,
-                searchHistory: window.searchHistory,
-                favLocations: window.favLocations
-            }, { merge: true }).catch(err => {
+            try {
+                await setDoc(docRef, {
+                    reviews: window.reviews,
+                    favorites: window.favorites,
+                    searchHistory: window.searchHistory,
+                    favLocations: window.favLocations
+                }, { merge: true });
+            } catch(err) {
                 console.error("雲端存檔錯誤", err);
-                window.showToast("❌ 雲端存檔失敗，請確認 Firebase 設定喔！", "error");
-            });
+                throw err; // 把錯誤往上丟，讓 confirmSync 可以抓到
+            }
         }
 
         function updateUIForSync() {
             window.updateLocFavBtn();
             if(!document.getElementById('fav-modal').classList.contains('hidden')) {
-                window.renderFavList();
+                window.renderFavList(); // 如果畫面開著，即時重繪選單
             }
             if(currentKeyword && currentPlacesList.length > 0) {
                 window.renderResultsList(currentPlacesList);
@@ -393,7 +386,6 @@
             }
         }
 
-        // === 雲端帳號設定 UI 邏輯 ===
         window.toggleSyncModal = function() {
             const m = document.getElementById('sync-modal');
             if(m.classList.contains('hidden')) {
@@ -404,51 +396,66 @@
             }
         }
 
-        // 升級版：支援強制等待 Firebase 拿號碼牌的智慧合併同步功能
+        // ==========================================
+        // 🔥 核心升級：防卡死強效同步按鈕
+        // ==========================================
         window.confirmSync = async function() {
             const val = document.getElementById('sync-key-input').value.trim();
             if(!val) return window.showToast('請輸入專屬帳號喔！', 'error');
+            
             customSyncKey = val;
             localStorage.setItem('foodSyncKey', val);
-            window.showToast('🔄 雲端同步中，正在智慧合併雙邊資料...');
             
-            // 強制檢查：如果按太快 Firebase 還沒給號碼牌，就叫它現場發一張！
-            if (!currentUser && auth) {
-                try {
-                    const cred = await signInAnonymously(auth);
-                    currentUser = cred.user;
-                } catch(e) {
-                    console.error("強制驗證失敗:", e);
-                }
-            }
-
-            if(currentUser && db) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey);
-                try {
-                    // 綁定前先強制做一次「強力雙向合併」再上傳，確保舊資料不會被吃掉
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const cloudFavs = data.favorites || [];
-                        const mergedFavs = [...window.favorites];
-                        cloudFavs.forEach(cf => {
-                            if (!mergedFavs.some(mf => mf.name === cf.name)) mergedFavs.push(cf);
-                        });
-                        window.favorites = mergedFavs;
-                        window.reviews = { ...(data.reviews || {}), ...window.reviews };
-                        window.searchHistory = [...new Set([...window.searchHistory, ...(data.searchHistory || [])])].slice(0, 10);
-                        window.favLocations = [...new Set([...window.favLocations, ...(data.favLocations || [])])];
-                    }
-                    await window.saveToCloud(); // 把合併結果推上雲端
-                } catch(e) {
-                    console.error("合併錯誤:", e);
-                    window.showToast('❌ 同步失敗，這可能是你的 Firebase 還沒開通測試模式喔！', 'error');
-                }
-                setupFirestoreListener();
-            } else {
-                window.showToast('❌ 驗證系統未準備好，請重新整理後再試一次！', 'error');
-            }
+            // 1. 第一步：先關閉視窗，讓使用者覺得很順暢
             window.toggleSyncModal();
+            window.showToast('🔄 雲端連線中...請稍候');
+            
+            try {
+                // 2. 防卡死機制：設定最高等 5 秒，如果不回傳直接中斷報錯
+                const timeoutLimit = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+
+                if (!currentUser && auth) {
+                    const cred = await Promise.race([signInAnonymously(auth), timeoutLimit]);
+                    currentUser = cred.user;
+                }
+
+                if(!currentUser || !db) throw new Error("資料庫尚未準備好");
+
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey);
+                
+                // 3. 第一次綁定時，進行「智慧合併」
+                const docSnap = await Promise.race([getDoc(docRef), timeoutLimit]);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const cloudFavs = data.favorites || [];
+                    const mergedFavs = [...window.favorites];
+                    cloudFavs.forEach(cf => {
+                        if (!mergedFavs.some(mf => mf.name === cf.name)) mergedFavs.push(cf);
+                    });
+                    window.favorites = mergedFavs;
+                    window.reviews = { ...(data.reviews || {}), ...window.reviews };
+                    window.searchHistory = [...new Set([...window.searchHistory, ...(data.searchHistory || [])])].slice(0, 10);
+                    window.favLocations = [...new Set([...window.favLocations, ...(data.favLocations || [])])];
+                }
+                
+                // 4. 將合併後的最終結果推上雲端
+                await Promise.race([window.saveToCloud(), timeoutLimit]);
+                
+                // 5. 重新啟動背景監聽
+                setupFirestoreListener();
+                
+                window.showToast('✅ 雙向同步成功！資料已完美合併。');
+                updateUIForSync();
+
+            } catch(e) {
+                console.error("同步錯誤:", e);
+                // 精準抓漏：到底是網路太慢卡死，還是權限被擋？
+                if (e.message === "Timeout") {
+                    window.showToast('❌ 連線逾時！請檢查網路，或確認你的 Firebase 有建立 Firestore 資料庫', 'error');
+                } else {
+                    window.showToast('❌ 同步失敗，這可能是你的 Firebase 還沒開通測試模式權限喔！', 'error');
+                }
+            }
         }
 
 
@@ -529,7 +536,6 @@
         }
 
         window.initMap = function() {
-            // 極淨地圖設計：隱藏所有預設的地標(POI)與公司行號，保留純粹的地圖介面
             const mapOptions = {
                 center: currentCenter,
                 zoom: 15,
@@ -545,7 +551,6 @@
             infowindow = new google.maps.InfoWindow();
         }
 
-        // 如果地圖 API 載得比較快，就在這裡重新手動觸發它！
         if (window.gmapsLoaded) {
             window.initMap();
         }
@@ -579,7 +584,6 @@
                         const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
                         geocoder.geocode({ location: pos, region: 'TW' }, (results, status) => {
                             if (status === 'OK' && results[0]) {
-                                // 將開頭的郵遞區號跟國家稍微過濾掉，讓地址乾淨一點
                                 const formattedAddress = results[0].formatted_address.replace(/^[0-9]+台灣/, '');
                                 document.getElementById('address-input').value = formattedAddress;
                                 handleLocationFound(pos, formattedAddress);
@@ -603,7 +607,6 @@
             map.setCenter(currentCenter);
             window.saveHistory(address);
             
-            // 使用內建的藍點標示定位中心點
             new google.maps.Marker({ 
                 map: map, position: currentCenter, 
                 icon: {
@@ -743,14 +746,13 @@
 
             const isBad = window.reviews[place.name] && window.reviews[place.name].rating === 'bad';
             
-            // 客製化：優化紅色圖釘的SVG，並讓灰色避雷針也使用相同樣式方便顯示標籤
             const markerIcon = {
                 path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
-                fillColor: isBad ? '#94a3b8' : '#ea4335', // 踩雷是灰色，正常是紅色
+                fillColor: isBad ? '#94a3b8' : '#ea4335',
                 fillOpacity: 1, strokeWeight: 1, strokeColor: '#ffffff',
                 scale: 1.5,
                 anchor: new google.maps.Point(12, 24),
-                labelOrigin: new google.maps.Point(12, -10) // 將文字精準推到圖釘的上方
+                labelOrigin: new google.maps.Point(12, -10)
             };
 
             const marker = new google.maps.Marker({
@@ -849,12 +851,11 @@
             if(currentSelectedPlace.types) cat = autoCategorize(currentSelectedPlace.types.join(','), currentSelectedPlace.name);
 
             window.reviews[currentSelectedPlace.name] = { rating: currentRating, note: document.getElementById('review-note').value, category: cat };
-            window.saveToCloud(); // 儲存並自動推上雲端
+            window.saveToCloud(); 
             window.showToast("💾 筆記儲存成功！(踩雷店家在地圖與列表中將會變灰)");
             
             if (currentKeyword) {
                 window.renderResultsList(currentPlacesList);
-                // 為了重新標示地圖上文字與顏色，稍微觸發重新繪製
                 clearMarkers();
                 currentPlacesList.forEach((place, index) => createMarker(place, index));
             }
