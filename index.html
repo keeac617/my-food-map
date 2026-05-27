@@ -11,11 +11,17 @@
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        #map { min-height: 400px; }
+        #map { min-height: 450px; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         /* 踩雷店家的列表卡片樣式 */
         .bad-store-card { background-color: #f1f5f9; opacity: 0.6; filter: grayscale(50%); border-color: #cbd5e1; }
+        /* 自訂地圖標籤樣式：讓文字有白色描邊且不被遮擋 */
+        .custom-map-label {
+            text-shadow: 2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 0 1px 0 #fff, 0 -1px 0 #fff;
+            white-space: nowrap;
+            margin-top: -2px;
+        }
     </style>
 </head>
 <body class="text-slate-800 p-4 md:p-8 flex justify-center">
@@ -24,12 +30,17 @@
     <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white shadow-xl transition-opacity duration-300 z-[100] hidden font-bold"></div>
 
     <div class="max-w-4xl w-full">
-        <!-- 頭部區塊與我的最愛按鈕 -->
+        <!-- 頭部區塊、同步與最愛按鈕 -->
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight"><i class="fa-solid fa-utensils text-orange-500 mr-2"></i>美食探測儀</h1>
-            <button onclick="toggleFavModal()" class="w-full md:w-auto bg-rose-100 text-rose-600 hover:bg-rose-200 px-5 py-2.5 rounded-full font-bold transition shadow-sm flex items-center justify-center">
-                <i class="fa-solid fa-star mr-2"></i> 我的最愛清單
-            </button>
+            <div class="flex gap-2 w-full md:w-auto">
+                <button onclick="toggleSyncModal()" class="flex-1 md:flex-none bg-blue-100 text-blue-600 hover:bg-blue-200 px-5 py-2.5 rounded-full font-bold transition shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> 雲端同步
+                </button>
+                <button onclick="toggleFavModal()" class="flex-1 md:flex-none bg-rose-100 text-rose-600 hover:bg-rose-200 px-5 py-2.5 rounded-full font-bold transition shadow-sm flex items-center justify-center">
+                    <i class="fa-solid fa-star mr-2"></i> 我的最愛
+                </button>
+            </div>
         </div>
 
         <!-- 歷史紀錄、收藏地點與地址搜尋區 -->
@@ -44,10 +55,13 @@
                            class="w-full pl-10 bg-slate-50 border border-slate-300 text-slate-900 rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-3 outline-none transition shadow-inner"
                            onkeypress="if(event.key === 'Enter') { geocodeAddress(); this.blur(); }">
                     <div id="history-dropdown" class="absolute z-50 w-full bg-white border border-slate-200 shadow-xl rounded-xl mt-12 hidden max-h-56 overflow-y-auto custom-scrollbar">
-                        <!-- 歷史紀錄與收藏地點會動態產生在這裡 -->
+                        <!-- 歷史紀錄與收藏地點動態產生區 -->
                     </div>
                 </div>
-                <button onclick="geocodeAddress()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6 py-3 transition shadow-md whitespace-nowrap">📍 定位</button>
+                <div class="flex gap-2">
+                    <button onclick="getCurrentLocation()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl px-4 py-3 transition shadow-sm" title="使用目前位置"><i class="fa-solid fa-location-arrow"></i></button>
+                    <button onclick="geocodeAddress()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-6 py-3 transition shadow-md whitespace-nowrap">📍 定位</button>
+                </div>
             </div>
         </div>
 
@@ -55,7 +69,6 @@
         <div class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
             <h3 class="text-sm font-bold text-slate-500 mb-3"><i class="fa-solid fa-magnifying-glass text-indigo-500 mr-1"></i> 2. 搜尋特定店家或選擇類別</h3>
             
-            <!-- 指定店家搜尋列 -->
             <div class="flex flex-col sm:flex-row gap-2 mb-4">
                 <input type="text" id="store-name-input" placeholder="直接搜尋特定店名 (例：麥當勞、鼎泰豐)..." class="flex-1 bg-slate-50 border border-slate-300 text-slate-900 rounded-xl px-4 py-2.5 focus:ring-indigo-500 focus:border-indigo-500 outline-none shadow-inner transition" onkeypress="if(event.key === 'Enter') { searchStoreName(); this.blur(); }">
                 <button onclick="searchStoreName()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-6 py-2.5 transition shadow-sm whitespace-nowrap"><i class="fa-solid fa-search mr-1"></i> 搜尋店家</button>
@@ -189,11 +202,16 @@
                 <i class="fa-solid fa-floppy-disk mr-2"></i> 儲存筆記
             </button>
         </div>
+        
+        <!-- 底部版號資訊 -->
+        <div class="text-center text-slate-400 text-xs mt-8 mb-4 font-mono">
+            2.0 | 2026/05/27 09:02
+        </div>
     </div>
 
     <!-- 我的最愛清單彈窗 (Modal) -->
     <div id="fav-modal" class="fixed inset-0 bg-slate-900 bg-opacity-60 z-50 hidden flex justify-center items-center backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-11/12 max-w-lg max-h-[80vh] flex flex-col shadow-2xl fade-in">
+        <div class="bg-white rounded-2xl w-11/12 max-w-lg max-h-[80vh] flex flex-col shadow-2xl fade-in relative">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-2xl">
                 <h2 class="text-xl font-extrabold text-slate-800"><i class="fa-solid fa-bookmark text-rose-500 mr-2"></i>我的收藏本</h2>
                 <button onclick="toggleFavModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -204,29 +222,184 @@
         </div>
     </div>
 
+    <!-- 雲端同步設定彈窗 (Modal) -->
+    <div id="sync-modal" class="fixed inset-0 bg-slate-900 bg-opacity-60 z-50 hidden flex justify-center items-center backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-11/12 max-w-sm flex flex-col shadow-2xl p-6 relative fade-in">
+            <button onclick="toggleSyncModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            <h2 class="text-xl font-extrabold text-slate-800 mb-2"><i class="fa-solid fa-cloud-arrow-up text-blue-500 mr-2"></i>跨裝置同步</h2>
+            <p class="text-xs text-slate-500 mb-4 leading-relaxed">設定一組專屬帳號名稱（例如手機號碼）。在不同的電腦或手機上開啟網頁時，只要輸入相同名稱，你的「最愛、歷史紀錄與評論」就會瞬間同步喔！</p>
+            <input type="text" id="sync-key-input" placeholder="請設定或輸入專屬帳號..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 mb-4 focus:ring-blue-500 focus:border-blue-500 outline-none font-bold text-slate-700 shadow-inner transition">
+            <button onclick="confirmSync()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3 rounded-xl transition shadow-md">🔗 綁定並開始同步</button>
+        </div>
+    </div>
+
+    <!-- 解決地圖與模組載入順序衝突的等待機制 -->
     <script>
+        window.gmapsLoaded = false;
+        window.initMapAsync = function() {
+            window.gmapsLoaded = true;
+            if (typeof window.initMap === 'function') {
+                window.initMap();
+            }
+        };
+    </script>
+
+    <!-- 將模組化邏輯綁定至 Window 物件供前端呼叫 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // === Firebase 雲端資料庫設定區 ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyAk-TsFJ9a7bn5jy-DwLIgUEjZWoNlv4q8",
+            authDomain: "myfoodmap-b7389.firebaseapp.com",
+            projectId: "myfoodmap-b7389",
+            storageBucket: "myfoodmap-b7389.firebasestorage.app",
+            messagingSenderId: "23220454263",
+            appId: "1:23220454263:web:27d1793355d323e2ee5772"
+        };
+        
+        let db = null, auth = null;
+        let currentUser = null;
+        let unsubscribeData = null;
+        const appId = 'my-food-map-pro'; 
+        
+        // 使用者輸入的自訂雲端帳號
+        let customSyncKey = localStorage.getItem('foodSyncKey') || null;
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch(e) { 
+            console.error("Firebase 初始化失敗", e); 
+        }
+
+        // 資料變數宣告
         let map, service, infowindow, geocoder;
         let markers = [];
         let currentPlacesList = []; 
-        let currentPagination = null; // 用來儲存下一頁的權杖
-        let currentCenter = { lat: 25.0339, lng: 121.5644 }; // 預設台北101
+        let currentPagination = null;
+        let currentCenter = { lat: 25.0339, lng: 121.5644 }; 
         let currentKeyword = "";
         let currentRadius = 1000;
         let currentSelectedPlace = null; 
         let currentRating = ""; 
 
-        // 讀取 LocalStorage 資料
-        let reviews = JSON.parse(localStorage.getItem('foodReviews')) || {};
-        let favorites = JSON.parse(localStorage.getItem('foodFavs')) || [];
-        let searchHistory = JSON.parse(localStorage.getItem('foodHistory')) || [];
-        let favLocations = JSON.parse(localStorage.getItem('foodFavLocs')) || [];
+        // 讀取 LocalStorage 當作預設基礎
+        window.reviews = JSON.parse(localStorage.getItem('foodReviews')) || {};
+        window.favorites = JSON.parse(localStorage.getItem('foodFavs')) || [];
+        window.searchHistory = JSON.parse(localStorage.getItem('foodHistory')) || [];
+        window.favLocations = JSON.parse(localStorage.getItem('foodFavLocs')) || [];
 
-        // 隨機抽籤清單
+        // 初始化驗證 (因為換成了自己的資料庫，直接使用匿名驗證)
+        const initAuth = async () => {
+            if (!auth) return;
+            try {
+                await signInAnonymously(auth);
+            } catch (e) {
+                console.error("驗證失敗", e);
+            }
+        };
+
+        if (auth) {
+            initAuth();
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    setupFirestoreListener(); // 驗證後啟動監聽器
+                }
+            });
+        }
+
+        function setupFirestoreListener() {
+            if (!currentUser || !db) return;
+            // 根據是否有自訂帳號，決定要存放在雲端的路徑
+            const docRef = customSyncKey
+                ? doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey)
+                : doc(db, 'artifacts', appId, 'users', currentUser.uid, 'foodData', 'main');
+
+            if (unsubscribeData) unsubscribeData();
+
+            unsubscribeData = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    window.reviews = data.reviews || window.reviews;
+                    window.favorites = data.favorites || window.favorites;
+                    window.searchHistory = data.searchHistory || window.searchHistory;
+                    window.favLocations = data.favLocations || window.favLocations;
+                    updateUIForSync();
+                } else if (customSyncKey) {
+                    // 如果綁定了新帳號但雲端沒資料，就把目前的本地端推上去
+                    window.saveToCloud();
+                }
+            }, (error) => {
+                console.error("雲端讀取錯誤:", error);
+            });
+        }
+
+        window.saveToCloud = function() {
+            // 同時備份在 LocalStorage 以防斷線
+            localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
+            localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
+            localStorage.setItem('foodHistory', JSON.stringify(window.searchHistory));
+            localStorage.setItem('foodFavLocs', JSON.stringify(window.favLocations));
+
+            if (!currentUser || !db) return;
+            
+            const docRef = customSyncKey
+                ? doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey)
+                : doc(db, 'artifacts', appId, 'users', currentUser.uid, 'foodData', 'main');
+
+            setDoc(docRef, {
+                reviews: window.reviews,
+                favorites: window.favorites,
+                searchHistory: window.searchHistory,
+                favLocations: window.favLocations
+            }, { merge: true }).catch(err => console.error("雲端存檔錯誤", err));
+        }
+
+        function updateUIForSync() {
+            window.updateLocFavBtn();
+            if(!document.getElementById('fav-modal').classList.contains('hidden')) {
+                window.renderFavList();
+            }
+            if(currentKeyword && currentPlacesList.length > 0) {
+                window.renderResultsList(currentPlacesList);
+            }
+            if(currentSelectedPlace) {
+                window.updateDetailUI();
+            }
+        }
+
+        // === 雲端帳號設定 UI 邏輯 ===
+        window.toggleSyncModal = function() {
+            const m = document.getElementById('sync-modal');
+            if(m.classList.contains('hidden')) {
+                document.getElementById('sync-key-input').value = customSyncKey || '';
+                m.classList.remove('hidden');
+            } else {
+                m.classList.add('hidden');
+            }
+        }
+
+        window.confirmSync = function() {
+            const val = document.getElementById('sync-key-input').value.trim();
+            if(!val) return window.showToast('請輸入專屬帳號喔！', 'error');
+            customSyncKey = val;
+            localStorage.setItem('foodSyncKey', val);
+            window.showToast('🔄 雲端帳號綁定成功！開始同步資料...');
+            if(currentUser) setupFirestoreListener();
+            window.toggleSyncModal();
+        }
+
+
+        // === 主力邏輯區塊 ===
         const foodList = ["拉麵", "火鍋", "水餃", "義大利麵", "牛排", "早午餐", "壽司", "燒肉", "健康餐", "漢堡", "滷肉飯", "蔥油餅"];
         const drinkList = ["珍珠奶茶", "無糖綠茶", "拿鐵咖啡", "水果茶", "手沖單品", "豆花", "冰品", "手搖飲料"];
 
-        // 提示 UI
-        function showToast(msg, type = 'success') {
+        window.showToast = function(msg, type = 'success') {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.className = `fixed top-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full text-white shadow-xl transition-opacity duration-300 z-[100] font-bold ${type === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`;
@@ -234,84 +407,95 @@
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
 
-        // 顯示歷史紀錄與收藏地點
-        function showHistory() {
+        window.showHistory = function() {
             const drop = document.getElementById('history-dropdown');
-            updateLocFavBtn(); 
-            
-            if (searchHistory.length === 0 && favLocations.length === 0) return;
+            window.updateLocFavBtn(); 
+            if (window.searchHistory.length === 0 && window.favLocations.length === 0) return;
             
             let html = "";
-            if(favLocations.length > 0) {
+            if(window.favLocations.length > 0) {
                 html += `<div class="bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-400 border-b border-slate-100">⭐ 收藏的地點</div>`;
-                html += favLocations.map(h => 
-                    `<div onclick="selectHistory('${h}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 font-medium flex items-center"><i class="fa-solid fa-star text-rose-400 w-5"></i>${h}</div>`
+                html += window.favLocations.map(h => 
+                    `<div onclick="selectHistory('${h.replace(/'/g, "\\'")}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 font-medium flex items-center"><i class="fa-solid fa-star text-rose-400 w-5"></i>${h}</div>`
                 ).join('');
             }
-            if(searchHistory.length > 0) {
+            if(window.searchHistory.length > 0) {
                 html += `<div class="bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-400 border-b border-slate-100">🕒 最近搜尋</div>`;
-                html += searchHistory.map(h => 
-                    `<div onclick="selectHistory('${h}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 font-medium flex items-center"><i class="fa-solid fa-clock-rotate-left text-slate-400 w-5"></i>${h}</div>`
+                html += window.searchHistory.map(h => 
+                    `<div onclick="selectHistory('${h.replace(/'/g, "\\'")}')" class="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 font-medium flex items-center"><i class="fa-solid fa-clock-rotate-left text-slate-400 w-5"></i>${h}</div>`
                 ).join('');
             }
-            
             drop.innerHTML = html;
             drop.classList.remove('hidden');
         }
 
-        function hideHistoryDelay() { setTimeout(() => { document.getElementById('history-dropdown').classList.add('hidden'); }, 200); }
-        function selectHistory(addr) { 
+        window.hideHistoryDelay = function() { setTimeout(() => { document.getElementById('history-dropdown').classList.add('hidden'); }, 200); }
+        
+        window.selectHistory = function(addr) { 
             document.getElementById('address-input').value = addr; 
-            updateLocFavBtn();
-            geocodeAddress(); 
+            window.updateLocFavBtn();
+            window.geocodeAddress(); 
         }
 
-        function saveHistory(addr) {
-            if(favLocations.includes(addr)) return; 
-            searchHistory = searchHistory.filter(h => h !== addr);
-            searchHistory.unshift(addr);
-            if (searchHistory.length > 10) searchHistory.pop(); 
-            localStorage.setItem('foodHistory', JSON.stringify(searchHistory));
+        window.saveHistory = function(addr) {
+            if(window.favLocations.includes(addr)) return; 
+            window.searchHistory = window.searchHistory.filter(h => h !== addr);
+            window.searchHistory.unshift(addr);
+            if (window.searchHistory.length > 10) window.searchHistory.pop(); 
+            window.saveToCloud();
         }
 
-        function toggleFavLocation() {
+        window.toggleFavLocation = function() {
             const addr = document.getElementById('address-input').value.trim();
-            if(!addr) return showToast('請先輸入你要收藏的地址、商圈或地標！', 'error');
+            if(!addr) return window.showToast('請先輸入你要收藏的地址、商圈或地標！', 'error');
             
-            if(favLocations.includes(addr)) {
-                favLocations = favLocations.filter(l => l !== addr);
-                showToast('💔 已取消收藏此地點');
+            if(window.favLocations.includes(addr)) {
+                window.favLocations = window.favLocations.filter(l => l !== addr);
+                window.showToast('💔 已取消收藏此地點');
             } else {
-                favLocations.push(addr);
-                searchHistory = searchHistory.filter(h => h !== addr);
-                localStorage.setItem('foodHistory', JSON.stringify(searchHistory));
-                showToast('📍 成功收藏地點！');
+                window.favLocations.push(addr);
+                window.searchHistory = window.searchHistory.filter(h => h !== addr);
+                window.showToast('📍 成功收藏地點！');
             }
-            localStorage.setItem('foodFavLocs', JSON.stringify(favLocations));
-            updateLocFavBtn();
+            window.saveToCloud();
+            window.updateLocFavBtn();
         }
 
-        function updateLocFavBtn() {
+        window.updateLocFavBtn = function() {
             const addr = document.getElementById('address-input').value.trim();
             const btn = document.getElementById('btn-fav-loc');
-            if(addr && favLocations.includes(addr)) {
+            if(addr && window.favLocations.includes(addr)) {
                 btn.innerHTML = '<i class="fa-solid fa-heart text-rose-500"></i>';
             } else {
                 btn.innerHTML = '<i class="fa-regular fa-heart"></i>';
             }
         }
 
-        function initMap() {
-            map = new google.maps.Map(document.getElementById("map"), { center: currentCenter, zoom: 15 });
+        window.initMap = function() {
+            // 極淨地圖設計：隱藏所有預設的地標(POI)與公司行號，保留純粹的地圖介面
+            const mapOptions = {
+                center: currentCenter,
+                zoom: 15,
+                styles: [
+                    { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+                    { featureType: "poi.business", stylers: [{ visibility: "off" }] },
+                    { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] }
+                ]
+            };
+            map = new google.maps.Map(document.getElementById("map"), mapOptions);
             service = new google.maps.places.PlacesService(map);
             geocoder = new google.maps.Geocoder();
             infowindow = new google.maps.InfoWindow();
         }
 
-        // 定位功能 (雙重引擎)
-        function geocodeAddress() {
+        // 如果地圖 API 載得比較快，就在這裡重新手動觸發它！
+        if (window.gmapsLoaded) {
+            window.initMap();
+        }
+
+        window.geocodeAddress = function() {
             const address = document.getElementById("address-input").value.trim();
-            if (!address) return showToast("請先輸入地址或區域喔！", "error");
+            if (!address) return window.showToast("請先輸入地址或區域喔！", "error");
 
             geocoder.geocode({ 'address': address, 'region': 'TW' }, (results, status) => {
                 if (status === 'OK') {
@@ -321,46 +505,79 @@
                         if (pStatus === google.maps.places.PlacesServiceStatus.OK && pResults) {
                             handleLocationFound(pResults[0].geometry.location, address);
                         } else {
-                            showToast(`❌ 找不到「${address}」，請確認是否有錯字！`, "error");
+                            window.showToast(`❌ 找不到「${address}」，請確認是否有錯字！`, "error");
                         }
                     });
                 } else {
-                    showToast(`⚠️ API 被拒絕或發生錯誤: ${status}，請檢查金鑰設定！`, "error");
+                    window.showToast(`⚠️ 定位發生錯誤: ${status}，請檢查 API 設定！`, "error");
                 }
             });
+        }
+
+        window.getCurrentLocation = function() {
+            if (navigator.geolocation) {
+                window.showToast("⏳ 正在抓取您的位置...", "success");
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+                        geocoder.geocode({ location: pos, region: 'TW' }, (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                // 將開頭的郵遞區號跟國家稍微過濾掉，讓地址乾淨一點
+                                const formattedAddress = results[0].formatted_address.replace(/^[0-9]+台灣/, '');
+                                document.getElementById('address-input').value = formattedAddress;
+                                handleLocationFound(pos, formattedAddress);
+                            } else {
+                                document.getElementById('address-input').value = "我的目前位置";
+                                handleLocationFound(pos, "我的目前位置");
+                            }
+                        });
+                    },
+                    (error) => {
+                        window.showToast("❌ 無法取得位置，請確認是否允許瀏覽器使用定位權限！", "error");
+                    }
+                );
+            } else {
+                window.showToast("❌ 您的瀏覽器不支援定位功能！", "error");
+            }
         }
 
         function handleLocationFound(location, address) {
             currentCenter = location;
             map.setCenter(currentCenter);
-            saveHistory(address);
-            new google.maps.Marker({ map: map, position: currentCenter, icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" });
-            showToast(`📍 定位成功！現在可以選擇你想吃的類別了`);
+            window.saveHistory(address);
+            
+            // 使用內建的藍點標示定位中心點
+            new google.maps.Marker({ 
+                map: map, position: currentCenter, 
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 6, fillColor: '#2563eb', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff'
+                }
+            });
+            window.showToast(`📍 定位成功！現在可以選擇你想吃的類別了`);
         }
 
-        function searchStoreName() {
+        window.searchStoreName = function() {
             const name = document.getElementById('store-name-input').value.trim();
-            if (!name) return showToast("請先輸入想搜尋的店名喔！", "error");
+            if (!name) return window.showToast("請先輸入想搜尋的店名喔！", "error");
             document.getElementById('roulette-result').innerHTML = `🎯 鎖定目標：<span class="text-indigo-600">${name}</span>`;
             searchNearby(name, 1000); 
         }
 
-        function manualSearch(keyword) {
+        window.manualSearch = function(keyword) {
             document.getElementById('roulette-result').innerHTML = `🎯 鎖定目標：<span class="text-blue-600">${keyword}</span>`;
             searchNearby(keyword, 1000);
         }
 
-        function expandSearchTo8km() {
+        window.expandSearchTo8km = function() {
             searchNearby(currentKeyword, 8000); 
         }
 
-        // 搜尋附近核心邏輯
         function searchNearby(keyword, radius) {
             if (!map) return;
             currentKeyword = keyword;
             currentRadius = radius;
             
-            // 全新搜尋時清空現有資料
             clearMarkers();
             currentPlacesList = [];
             currentPagination = null;
@@ -371,33 +588,23 @@
             document.getElementById('load-more-btn').classList.add('hidden');
 
             const request = { location: currentCenter, radius: currentRadius.toString(), keyword: keyword };
-
             service.nearbySearch(request, (results, status, pagination) => {
                 handleSearchResults(results, status, pagination, keyword);
             });
         }
 
-        // 處理 API 回傳的搜尋結果與分頁資訊
         function handleSearchResults(results, status, pagination, keyword) {
             if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                
-                // 紀錄新資料起始的索引，確保地圖圖釘跟陣列對齊
                 const startIndex = currentPlacesList.length;
                 currentPlacesList = currentPlacesList.concat(results); 
                 
-                // 只為新加入的資料畫上圖釘
                 results.forEach((place, index) => createMarker(place, startIndex + index));
-                
                 map.setZoom(currentRadius > 3000 ? 12 : (currentRadius > 1000 ? 13 : 15));
+                if (currentRadius < 8000) document.getElementById('expand-btn').classList.remove('hidden');
                 
-                if (currentRadius < 8000) {
-                    document.getElementById('expand-btn').classList.remove('hidden');
-                }
-                
-                renderResultsList(currentPlacesList);
-                showToast(`已找到 ${currentPlacesList.length} 家「${keyword}」！`);
+                window.renderResultsList(currentPlacesList);
+                window.showToast(`已找到 ${currentPlacesList.length} 家「${keyword}」！`);
 
-                // 處理分頁載入更多 (Google 的 API 限制)
                 const loadBtn = document.getElementById('load-more-btn');
                 if (pagination && pagination.hasNextPage) {
                     currentPagination = pagination;
@@ -405,8 +612,6 @@
                     loadBtn.disabled = true;
                     loadBtn.innerText = "⏳ 尋找更多中...";
                     loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-                    // Google 規定 next_page_token 需要等大約 2 秒才能呼叫
                     setTimeout(() => {
                         loadBtn.disabled = false;
                         loadBtn.innerText = "➕ 載入更多結果";
@@ -416,17 +621,15 @@
                     currentPagination = null;
                     loadBtn.classList.add('hidden');
                 }
-
             } else {
                 if(currentPlacesList.length === 0) {
-                    showToast(`附近找不到「${keyword}」，試試擴大範圍或換個關鍵字？`, "error");
+                    window.showToast(`附近找不到「${keyword}」，試試擴大範圍或換個關鍵字？`, "error");
                     if (currentRadius < 8000) document.getElementById('expand-btn').classList.remove('hidden');
                 }
             }
         }
 
-        // 呼叫載入更多
-        function loadMoreResults() {
+        window.loadMoreResults = function() {
             if (currentPagination && currentPagination.hasNextPage) {
                 const loadBtn = document.getElementById('load-more-btn');
                 loadBtn.disabled = true;
@@ -436,15 +639,14 @@
             }
         }
 
-        // 渲染列表視圖
-        function renderResultsList(results) {
+        window.renderResultsList = function(results) {
             const grid = document.getElementById('results-list-grid');
             document.getElementById('results-count').innerText = `共 ${results.length} 家`;
             grid.innerHTML = "";
             
             results.forEach((place, index) => {
-                const isBad = reviews[place.name] && reviews[place.name].rating === 'bad';
-                const isFav = favorites.some(f => f.name === place.name);
+                const isBad = window.reviews[place.name] && window.reviews[place.name].rating === 'bad';
+                const isFav = window.favorites.some(f => f.name === place.name);
                 
                 const cardClass = isBad ? "bad-store-card" : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-lg";
                 const favColor = isFav ? "text-rose-500" : "text-slate-300";
@@ -474,23 +676,38 @@
             document.getElementById('results-list-section').classList.remove('hidden');
         }
 
-        function triggerMarkerClick(index) {
+        window.triggerMarkerClick = function(index) {
             google.maps.event.trigger(markers[index], 'click');
             document.getElementById('review-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        // 建立地圖圖釘 (包含踩雷變灰邏輯)
         function createMarker(place, index) {
             if (!place.geometry || !place.geometry.location) return;
 
-            const isBad = reviews[place.name] && reviews[place.name].rating === 'bad';
-            const markerIcon = isBad ? {
-                path: google.maps.SymbolPath.CIRCLE,
-                fillColor: '#94a3b8', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff', scale: 8
-            } : null;
+            const isBad = window.reviews[place.name] && window.reviews[place.name].rating === 'bad';
+            
+            // 客製化：優化紅色圖釘的SVG，並讓灰色避雷針也使用相同樣式方便顯示標籤
+            const markerIcon = {
+                path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z",
+                fillColor: isBad ? '#94a3b8' : '#ea4335', // 踩雷是灰色，正常是紅色
+                fillOpacity: 1, strokeWeight: 1, strokeColor: '#ffffff',
+                scale: 1.5,
+                anchor: new google.maps.Point(12, 24),
+                labelOrigin: new google.maps.Point(12, -10) // 將文字精準推到圖釘的上方
+            };
 
             const marker = new google.maps.Marker({
-                map: map, position: place.geometry.location, title: place.name, icon: markerIcon
+                map: map, 
+                position: place.geometry.location, 
+                title: place.name, 
+                icon: markerIcon,
+                label: {
+                    text: place.name,
+                    color: isBad ? '#475569' : '#b91c1c',
+                    fontSize: '13px',
+                    fontWeight: '900',
+                    className: 'custom-map-label'
+                }
             });
             markers.push(marker);
 
@@ -501,12 +718,8 @@
             });
         }
         
-        function clearMarkers() { 
-            markers.forEach(m => m.setMap(null)); 
-            markers = []; 
-        }
+        function clearMarkers() { markers.forEach(m => m.setMap(null)); markers = []; }
 
-        // 載入詳細資訊 (取得詳細一週營業時間、電話、照片)
         function loadPlaceDetails(placeId, basicPlace) {
             service.getDetails({ placeId: placeId, fields: ['name', 'rating', 'user_ratings_total', 'formatted_phone_number', 'opening_hours', 'photos', 'url', 'types'] }, (data, status) => {
                 currentSelectedPlace = status === google.maps.places.PlacesServiceStatus.OK ? data : basicPlace;
@@ -526,7 +739,6 @@
                     else if(isOpenNow === false) hoursHTML = '<span class="text-red-500 font-bold">目前休息中 🔴</span>';
                 }
                 document.getElementById('detail-hours').innerHTML = hoursHTML;
-                
                 document.getElementById('detail-phone').innerText = currentSelectedPlace.formatted_phone_number || "無提供電話";
                 document.getElementById('detail-url').href = currentSelectedPlace.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentSelectedPlace.name)}`;
                 
@@ -540,24 +752,25 @@
 
                 currentRating = "";
                 document.getElementById('review-note').value = "";
-                if (reviews[currentSelectedPlace.name]) {
-                    currentRating = reviews[currentSelectedPlace.name].rating;
-                    document.getElementById('review-note').value = reviews[currentSelectedPlace.name].note || "";
+                if (window.reviews[currentSelectedPlace.name]) {
+                    currentRating = window.reviews[currentSelectedPlace.name].rating;
+                    document.getElementById('review-note').value = window.reviews[currentSelectedPlace.name].note || "";
                 }
-                updateDetailUI();
+                window.updateDetailUI();
                 
                 document.getElementById('review-section').classList.remove('hidden');
                 document.getElementById('review-section').scrollIntoView({ behavior: 'smooth' });
             });
         }
-        function closeReview() { document.getElementById('review-section').classList.add('hidden'); }
+        
+        window.closeReview = function() { document.getElementById('review-section').classList.add('hidden'); }
 
-        function rate(type) {
+        window.rate = function(type) {
             currentRating = type;
-            updateDetailUI();
+            window.updateDetailUI();
         }
 
-        function updateDetailUI() {
+        window.updateDetailUI = function() {
             const btnGood = document.getElementById('btn-good');
             const btnBad = document.getElementById('btn-bad');
             btnGood.className = "flex-1 bg-white hover:bg-green-50 text-slate-600 border border-slate-200 font-bold py-2.5 rounded-xl transition shadow-sm";
@@ -567,23 +780,27 @@
             if (currentRating === 'bad') btnBad.className = "flex-1 bg-red-500 text-white border-red-600 font-bold py-2.5 rounded-xl transition shadow-md";
 
             if (currentSelectedPlace) {
-                const isFav = favorites.some(f => f.name === currentSelectedPlace.name);
+                const isFav = window.favorites.some(f => f.name === currentSelectedPlace.name);
                 document.getElementById('fav-btn-detail').innerHTML = isFav ? `<i class="fa-solid fa-star text-rose-500"></i>` : `<i class="fa-regular fa-star"></i>`;
             }
         }
 
-        function saveReview() {
-            if (!currentSelectedPlace || !currentRating) return showToast("請先選擇超讚或踩雷！", "error");
+        window.saveReview = function() {
+            if (!currentSelectedPlace || !currentRating) return window.showToast("請先選擇超讚或踩雷！", "error");
             
             let cat = '美食';
             if(currentSelectedPlace.types) cat = autoCategorize(currentSelectedPlace.types.join(','), currentSelectedPlace.name);
 
-            reviews[currentSelectedPlace.name] = { rating: currentRating, note: document.getElementById('review-note').value, category: cat };
-            localStorage.setItem('foodReviews', JSON.stringify(reviews));
-            showToast("💾 筆記儲存成功！(踩雷店家在地圖與列表中將會變灰)");
+            window.reviews[currentSelectedPlace.name] = { rating: currentRating, note: document.getElementById('review-note').value, category: cat };
+            window.saveToCloud(); // 儲存並自動推上雲端
+            window.showToast("💾 筆記儲存成功！(踩雷店家在地圖與列表中將會變灰)");
             
-            // 更新狀態後重新渲染卡片
-            if (currentKeyword) renderResultsList(currentPlacesList);
+            if (currentKeyword) {
+                window.renderResultsList(currentPlacesList);
+                // 為了重新標示地圖上文字與顏色，稍微觸發重新繪製
+                clearMarkers();
+                currentPlacesList.forEach((place, index) => createMarker(place, index));
+            }
         }
 
         function autoCategorize(typesStr, name) {
@@ -593,51 +810,50 @@
             return '美食';
         }
 
-        function toggleFavFromList(placeName, typesStr) {
-            const index = favorites.findIndex(f => f.name === placeName);
+        window.toggleFavFromList = function(placeName, typesStr) {
+            const index = window.favorites.findIndex(f => f.name === placeName);
             if (index > -1) {
-                favorites.splice(index, 1);
-                showToast("💔 已移除最愛");
+                window.favorites.splice(index, 1);
+                window.showToast("💔 已移除最愛");
             } else {
                 const cat = autoCategorize(typesStr, placeName);
-                favorites.push({ name: placeName, category: cat });
-                showToast(`❤️ 加入最愛！自動分類為：${cat}`);
+                window.favorites.push({ name: placeName, category: cat });
+                window.showToast(`❤️ 加入最愛！自動分類為：${cat}`);
             }
-            localStorage.setItem('foodFavs', JSON.stringify(favorites));
-            if (currentKeyword) renderResultsList(currentPlacesList); 
-            if (currentSelectedPlace && currentSelectedPlace.name === placeName) updateDetailUI();
+            window.saveToCloud();
+            if (currentKeyword) window.renderResultsList(currentPlacesList); 
+            if (currentSelectedPlace && currentSelectedPlace.name === placeName) window.updateDetailUI();
         }
 
-        function toggleFavoriteFromDetail() {
+        window.toggleFavoriteFromDetail = function() {
             if (!currentSelectedPlace) return;
-            toggleFavFromList(currentSelectedPlace.name, currentSelectedPlace.types ? currentSelectedPlace.types.join(',') : '');
+            window.toggleFavFromList(currentSelectedPlace.name, currentSelectedPlace.types ? currentSelectedPlace.types.join(',') : '');
         }
 
-        function toggleFavModal() {
+        window.toggleFavModal = function() {
             const modal = document.getElementById('fav-modal');
-            if (modal.classList.contains('hidden')) { renderFavList(); modal.classList.remove('hidden'); } 
+            if (modal.classList.contains('hidden')) { window.renderFavList(); modal.classList.remove('hidden'); } 
             else { modal.classList.add('hidden'); }
         }
 
-        function renderFavList() {
+        window.renderFavList = function() {
             const content = document.getElementById('fav-list-content');
-            if (favorites.length === 0 && favLocations.length === 0) return content.innerHTML = '<p class="text-center text-slate-400 py-10">你的清單空空的喔！趕快去探索吧！</p>';
+            if (window.favorites.length === 0 && window.favLocations.length === 0) return content.innerHTML = '<p class="text-center text-slate-400 py-10">你的清單空空的喔！趕快去探索吧！</p>';
 
             let html = "";
-
-            if(favLocations.length > 0) {
+            if(window.favLocations.length > 0) {
                 html += `<div class="mb-6"><h3 class="font-extrabold text-slate-700 mb-2 border-b-2 border-slate-100 pb-1">📍 常用地點</h3><ul class="space-y-2">`;
-                html += favLocations.map(l => `
+                html += window.favLocations.map(l => `
                     <li class="flex justify-between items-center bg-white p-3 border border-slate-200 rounded-xl shadow-sm hover:border-blue-300 transition">
-                        <span class="font-bold text-slate-700 cursor-pointer flex-1" onclick="selectHistory('${l}'); toggleFavModal();">${l}</span>
-                        <button onclick="removeFavLocModal('${l}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition ml-2"><i class="fa-solid fa-trash"></i></button>
+                        <span class="font-bold text-slate-700 cursor-pointer flex-1" onclick="selectHistory('${l.replace(/'/g, "\\'")}'); toggleFavModal();">${l}</span>
+                        <button onclick="removeFavLocModal('${l.replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition ml-2"><i class="fa-solid fa-trash"></i></button>
                     </li>
                 `).join('');
                 html += `</ul></div>`;
             }
 
             const grouped = { '美食': [], '飲料': [], '甜點': [] };
-            favorites.forEach(f => { if (grouped[f.category]) grouped[f.category].push(f); else grouped['美食'].push(f); });
+            window.favorites.forEach(f => { if (grouped[f.category]) grouped[f.category].push(f); else grouped['美食'].push(f); });
 
             const icons = { '美食': '🍱', '飲料': '🧋', '甜點': '🍰' };
             ['美食', '飲料', '甜點'].forEach(cat => {
@@ -646,7 +862,7 @@
                     html += grouped[cat].map(f => `
                         <li class="flex justify-between items-center bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
                             <span class="font-bold text-slate-700">${f.name}</span>
-                            <button onclick="removeFavModal('${f.name}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="removeFavModal('${f.name.replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition"><i class="fa-solid fa-trash"></i></button>
                         </li>
                     `).join('');
                     html += `</ul></div>`;
@@ -655,36 +871,37 @@
             content.innerHTML = html;
         }
 
-        function removeFavModal(name) {
-            favorites = favorites.filter(f => f.name !== name);
-            localStorage.setItem('foodFavs', JSON.stringify(favorites));
-            renderFavList();
-            if (currentKeyword) renderResultsList(currentPlacesList);
+        window.removeFavModal = function(name) {
+            window.favorites = window.favorites.filter(f => f.name !== name);
+            window.saveToCloud();
+            window.renderFavList();
+            if (currentKeyword) window.renderResultsList(currentPlacesList);
         }
-        function removeFavLocModal(addr) {
-            favLocations = favLocations.filter(l => l !== addr);
-            localStorage.setItem('foodFavLocs', JSON.stringify(favLocations));
-            updateLocFavBtn();
-            renderFavList();
+        
+        window.removeFavLocModal = function(addr) {
+            window.favLocations = window.favLocations.filter(l => l !== addr);
+            window.saveToCloud();
+            window.updateLocFavBtn();
+            window.renderFavList();
         }
 
-        function spinRoulette(type) {
+        window.spinRoulette = function(type) {
             playRouletteAnimation(type === 'food' ? foodList : drinkList);
         }
 
-        function spinPocket() {
+        window.spinPocket = function() {
             const cat = document.getElementById('pocket-category').value;
             const pocketSet = new Set();
             
-            favorites.forEach(f => { if (cat === 'all' || f.category === cat) pocketSet.add(f.name); });
-            Object.keys(reviews).forEach(name => {
-                if (reviews[name].rating === 'good') {
-                    if (cat === 'all' || reviews[name].category === cat) pocketSet.add(name);
+            window.favorites.forEach(f => { if (cat === 'all' || f.category === cat) pocketSet.add(f.name); });
+            Object.keys(window.reviews).forEach(name => {
+                if (window.reviews[name].rating === 'good') {
+                    if (cat === 'all' || window.reviews[name].category === cat) pocketSet.add(name);
                 }
             });
 
             const pocketList = Array.from(pocketSet);
-            if (pocketList.length === 0) return showToast("這個分類的口袋名單還是空的喔！", "error");
+            if (pocketList.length === 0) return window.showToast("這個分類的口袋名單還是空的喔！", "error");
             playRouletteAnimation(pocketList, 3000); 
         }
 
@@ -704,6 +921,6 @@
         }
     </script>
     
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8Grjw2NayEbYrv1zFFAvMzYTdSR-Fk9I&libraries=places&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB8Grjw2NayEbYrv1zFFAvMzYTdSR-Fk9I&libraries=places&callback=initMapAsync" async defer></script>
 </body>
 </html>
