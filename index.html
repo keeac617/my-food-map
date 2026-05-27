@@ -248,7 +248,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // === Firebase 雲端資料庫設定區 ===
         const firebaseConfig = {
@@ -325,10 +325,25 @@
             unsubscribeData = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    window.reviews = data.reviews || window.reviews;
-                    window.favorites = data.favorites || window.favorites;
-                    window.searchHistory = data.searchHistory || window.searchHistory;
-                    window.favLocations = data.favLocations || window.favLocations;
+                    
+                    // 智慧合併邏輯：保留兩邊的手機與電腦新增紀錄
+                    const cloudFavs = data.favorites || [];
+                    const mergedFavs = [...window.favorites];
+                    cloudFavs.forEach(cf => {
+                        if (!mergedFavs.some(mf => mf.name === cf.name)) mergedFavs.push(cf);
+                    });
+                    window.favorites = mergedFavs;
+                    
+                    window.reviews = { ...(data.reviews || {}), ...window.reviews };
+                    window.searchHistory = [...new Set([...(data.searchHistory || []), ...window.searchHistory])].slice(0, 10);
+                    window.favLocations = [...new Set([...(data.favLocations || []), ...window.favLocations])];
+
+                    // 更新 LocalStorage
+                    localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
+                    localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
+                    localStorage.setItem('foodHistory', JSON.stringify(window.searchHistory));
+                    localStorage.setItem('foodFavLocs', JSON.stringify(window.favLocations));
+
                     updateUIForSync();
                 } else if (customSyncKey) {
                     // 如果綁定了新帳號但雲端沒資料，就把目前的本地端推上去
@@ -384,13 +399,36 @@
             }
         }
 
-        window.confirmSync = function() {
+        window.confirmSync = async function() {
             const val = document.getElementById('sync-key-input').value.trim();
             if(!val) return window.showToast('請輸入專屬帳號喔！', 'error');
             customSyncKey = val;
             localStorage.setItem('foodSyncKey', val);
-            window.showToast('🔄 雲端帳號綁定成功！開始同步資料...');
-            if(currentUser) setupFirestoreListener();
+            window.showToast('🔄 雲端同步中，正在智慧合併雙邊資料...');
+            
+            if(currentUser && db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'syncData', customSyncKey);
+                try {
+                    // 綁定前先強制做一次「強力雙向合併」再上傳，確保舊資料不會被吃掉
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        const cloudFavs = data.favorites || [];
+                        const mergedFavs = [...window.favorites];
+                        cloudFavs.forEach(cf => {
+                            if (!mergedFavs.some(mf => mf.name === cf.name)) mergedFavs.push(cf);
+                        });
+                        window.favorites = mergedFavs;
+                        window.reviews = { ...(data.reviews || {}), ...window.reviews };
+                        window.searchHistory = [...new Set([...window.searchHistory, ...(data.searchHistory || [])])].slice(0, 10);
+                        window.favLocations = [...new Set([...window.favLocations, ...(data.favLocations || [])])];
+                    }
+                    await window.saveToCloud(); // 把合併結果推上雲端
+                } catch(e) {
+                    console.error("合併錯誤:", e);
+                }
+                setupFirestoreListener();
+            }
             window.toggleSyncModal();
         }
 
