@@ -157,10 +157,10 @@
             <div id="results-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto custom-scrollbar p-1 mb-4">
                 <!-- 列表卡片會透過 JS 產生在這裡 -->
             </div>
-            <!-- 載入更多結果按鈕 -->
+            <!-- 自動載入更多結果提示 -->
             <div class="text-center">
-                <button id="load-more-btn" onclick="loadMoreResults()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 px-8 rounded-full transition shadow-sm border border-slate-300">
-                    ➕ 載入更多結果
+                <button id="load-more-btn" class="hidden bg-slate-100 text-slate-600 font-bold py-2.5 px-8 rounded-full transition shadow-sm border border-slate-300 opacity-75 cursor-wait">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i>Google 正在自動為您載入更多店家...
                 </button>
             </div>
         </div>
@@ -202,9 +202,9 @@
             </button>
         </div>
         
-        <!-- 底部版號資訊 -->
+        <!-- 版號與時間更新 (依使用者要求移除後綴文字) -->
         <div class="text-center text-slate-400 text-xs mt-8 mb-4 font-mono">
-            3.2 Serverless 最終穩定版 | 2026/05/27 20:11
+            3.4 | 2026/05/28 00:15
         </div>
     </div>
 
@@ -248,7 +248,7 @@
         window.searchHistory = JSON.parse(localStorage.getItem('foodHistory')) || [];
         window.favLocations = JSON.parse(localStorage.getItem('foodFavLocs')) || [];
 
-        // 單機儲存機制 (取代雲端)
+        // 單機儲存機制
         window.saveToLocal = function() {
             localStorage.setItem('foodReviews', JSON.stringify(window.reviews));
             localStorage.setItem('foodFavs', JSON.stringify(window.favorites));
@@ -271,15 +271,12 @@
         }
 
         window.generateAndCopyShareLink = function() {
-            // 將重要資料打包
             const payload = {
                 f: window.favorites,
                 r: window.reviews,
                 h: window.favLocations
             };
-            // 透過 Base64 壓縮編碼成網址字串
             const encodedData = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
-            // 將編碼動態接在當前網址後面，避免寫死網址出錯
             const shareUrl = window.location.origin + window.location.pathname + "?data=" + encodedData;
             
             const linkBox = document.getElementById('share-link-box');
@@ -290,18 +287,15 @@
             window.showToast("✅ 連結已複製！傳送到手機或分享給朋友吧！");
         }
 
-        // 當網頁載入時，檢查網址有沒有帶分享代碼
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const dataParam = params.get('data');
             
             if (dataParam) {
                 try {
-                    // 解碼拿回資料
                     const importedData = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(dataParam)))));
                     
                     if (confirm("💌 偵測到分享的口袋名單！是否要匯入並與您現有的名單合併？\n\n(放心，不會刪除您原本的紀錄)")) {
-                        // 智慧合併最愛清單
                         const importedFavs = importedData.f || [];
                         const mergedFavs = [...window.favorites];
                         importedFavs.forEach(inf => {
@@ -309,7 +303,6 @@
                         });
                         window.favorites = mergedFavs;
                         
-                        // 智慧合併筆記與常用地點
                         window.reviews = { ...(importedData.r || {}), ...window.reviews };
                         window.favLocations = [...new Set([...window.favLocations, ...(importedData.h || [])])];
                         
@@ -317,7 +310,6 @@
                         window.showToast("🎉 匯入成功！所有的名單都合併好囉！");
                     }
                     
-                    // 清除網址列的落落長代碼，保持畫面乾淨
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } catch (e) {
                     console.error("匯入解析失敗:", e);
@@ -336,7 +328,6 @@
             }
             if(window.currentSelectedPlace) window.updateDetailUI();
             if(window.currentKeyword && window.currentPlacesList) {
-                // 更新列表與地圖標籤狀態
                 window.renderResultsList(window.currentPlacesList);
                 clearMarkers();
                 window.currentPlacesList.forEach((place, index) => createMarker(place, index));
@@ -355,6 +346,7 @@
         let currentRadius = 1000;
         window.currentSelectedPlace = null; 
         let currentRating = ""; 
+        let currentSearchId = 0; // 用於防止自動翻頁的競態條件
 
         window.showToast = function(msg, type = 'success') {
             const toast = document.getElementById('toast');
@@ -501,7 +493,11 @@
                 map: map, position: currentCenter, 
                 icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#2563eb', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff' }
             });
-            window.showToast(`📍 定位成功！現在可以選擇你想吃的類別了`);
+            window.showToast(`📍 定位成功！自動為您尋找附近 5 公里美食...`);
+            
+            // 自動搜尋 5 公里內的飲食店家
+            document.getElementById('roulette-result').innerHTML = `🎯 自動探索：<span class="text-blue-600">附近5公里美食</span>`;
+            searchNearby('美食', 5000);
         }
 
         window.searchStoreName = function() {
@@ -522,6 +518,7 @@
 
         function searchNearby(keyword, radius) {
             if (!map) return;
+            currentSearchId++; // 更新搜尋 ID 避免自動翻頁跑到舊的
             window.currentKeyword = keyword;
             currentRadius = radius;
             
@@ -541,48 +538,48 @@
         }
 
         function handleSearchResults(results, status, pagination, keyword) {
+            const mySearchId = currentSearchId; // 記住這批結果屬於哪次搜尋
+            
             if (status === google.maps.places.PlacesServiceStatus.OK && results) {
                 const startIndex = window.currentPlacesList.length;
                 window.currentPlacesList = window.currentPlacesList.concat(results); 
                 
                 results.forEach((place, index) => createMarker(place, startIndex + index));
-                map.setZoom(currentRadius > 3000 ? 12 : (currentRadius > 1000 ? 13 : 15));
+                
+                // 只有第一次搜尋時調整縮放
+                if (startIndex === 0) {
+                    map.setZoom(currentRadius > 3000 ? 12 : (currentRadius > 1000 ? 13 : 15));
+                }
                 if (currentRadius < 8000) document.getElementById('expand-btn').classList.remove('hidden');
                 
                 window.renderResultsList(window.currentPlacesList);
-                window.showToast(`已找到 ${window.currentPlacesList.length} 家「${keyword}」！`);
 
+                // 自動翻頁機制：如果有下一頁，自動倒數 2 秒後載入
                 const loadBtn = document.getElementById('load-more-btn');
                 if (pagination && pagination.hasNextPage) {
                     currentPagination = pagination;
                     loadBtn.classList.remove('hidden');
-                    loadBtn.disabled = true;
-                    loadBtn.innerText = "⏳ 尋找更多中...";
-                    loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    
+                    // 自動執行下一頁
                     setTimeout(() => {
-                        loadBtn.disabled = false;
-                        loadBtn.innerText = "➕ 載入更多結果";
-                        loadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        // 確保使用者沒有在這 2 秒內又按了其他搜尋
+                        if (currentSearchId === mySearchId) {
+                            pagination.nextPage();
+                        }
                     }, 2000);
                 } else {
+                    // 已經翻到最後一頁 (或只有一頁)
                     currentPagination = null;
                     loadBtn.classList.add('hidden');
+                    if (window.currentPlacesList.length > 0) {
+                        window.showToast(`✅ 載入完畢！共為您找到 ${window.currentPlacesList.length} 家「${keyword}」！`);
+                    }
                 }
             } else {
                 if(window.currentPlacesList.length === 0) {
                     window.showToast(`附近找不到「${keyword}」，試試擴大範圍或換個關鍵字？`, "error");
                     if (currentRadius < 8000) document.getElementById('expand-btn').classList.remove('hidden');
                 }
-            }
-        }
-
-        window.loadMoreResults = function() {
-            if (currentPagination && currentPagination.hasNextPage) {
-                const loadBtn = document.getElementById('load-more-btn');
-                loadBtn.disabled = true;
-                loadBtn.innerText = "⏳ 載入中...";
-                loadBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                currentPagination.nextPage();
             }
         }
 
@@ -798,8 +795,8 @@
                     html += `<div class="mb-6"><h3 class="font-extrabold text-slate-700 mb-2 border-b-2 border-slate-100 pb-1">${icons[cat]} 收藏的${cat}</h3><ul class="space-y-2">`;
                     html += grouped[cat].map(f => `
                         <li class="flex justify-between items-center bg-white p-3 border border-slate-200 rounded-xl shadow-sm">
-                            <span class="font-bold text-slate-700">${f.name}</span>
-                            <button onclick="removeFavModal('${f.name.replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                            <span class="font-bold text-slate-700 cursor-pointer hover:text-blue-600 hover:underline decoration-blue-300 underline-offset-4 flex-1" onclick="searchFavoritePlace('${f.name.replace(/'/g, "\\'")}')" title="在地圖上搜尋此店">${f.name}</span>
+                            <button onclick="removeFavModal('${f.name.replace(/'/g, "\\'")}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded transition ml-2" title="刪除"><i class="fa-solid fa-trash"></i></button>
                         </li>
                     `).join('');
                     html += `</ul></div>`;
@@ -816,6 +813,13 @@
         window.removeFavLocModal = function(addr) {
             window.favLocations = window.favLocations.filter(l => l !== addr);
             window.saveToLocal();
+        }
+
+        window.searchFavoritePlace = function(name) {
+            window.toggleFavModal(); // 關閉最愛彈窗
+            document.getElementById('store-name-input').value = name;
+            document.getElementById('roulette-result').innerHTML = `🎯 鎖定最愛目標：<span class="text-rose-500">${name}</span>`;
+            searchNearby(name, 5000); // 放寬半徑確保涵蓋該店
         }
 
         window.spinRoulette = function(type) {
